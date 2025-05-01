@@ -20,23 +20,11 @@ class SixtySecondsNewsSource(BaseNewsSource):
         )
 
     async def fetch_data(self) -> NewsData:
-        """获取原始数据
-
-        Returns:
-            新闻数据
-        """
+        """获取原始数据"""
         return await api_manager.fetch_data(self.name)
 
     async def generate_image(self, news_data: NewsData) -> Message:
-        """生成图片格式的消息
-
-        Args:
-            news_data: 新闻数据
-
-        Returns:
-            图片格式的消息
-        """
-        # 渲染模板
+        """生成图片格式的消息"""
         pic = await render_news_to_image(
             news_data,
             "sixty_seconds.html",
@@ -49,14 +37,7 @@ class SixtySecondsNewsSource(BaseNewsSource):
         return Message(MessageSegment.image(pic))
 
     async def generate_text(self, news_data: NewsData) -> Message:
-        """生成文本格式的消息
-
-        Args:
-            news_data: 新闻数据
-
-        Returns:
-            文本格式的消息
-        """
+        """生成文本格式的消息"""
         message = Message(f"【每日60秒 ({get_today_date()})】\n\n")
 
         for i, item in enumerate(news_data.items, 1):
@@ -68,6 +49,5 @@ class SixtySecondsNewsSource(BaseNewsSource):
         return message
 
 
-# 注册60秒日报源
 sixty_seconds_source = SixtySecondsNewsSource()
 register_news_source(sixty_seconds_source)

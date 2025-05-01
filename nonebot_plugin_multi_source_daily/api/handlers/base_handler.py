@@ -1,13 +1,8 @@
-"""新闻源处理器基类
-
-定义新闻源处理器的基本接口和通用功能。
-"""
-
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional
 
 from nonebot import logger
-from nonebot.adapters.onebot.v11 import Message, MessageSegment
+from nonebot.adapters.onebot.v11 import Message
 
 from ...models import NewsData, NewsItem
 from ...utils.screenshot import capture_webpage_screenshot
@@ -17,12 +12,7 @@ class BaseNewsHandler(ABC):
     """新闻源处理器基类"""
 
     def __init__(self, name: str, aliases: List[str] = None):
-        """初始化新闻源处理器
-
-        Args:
-            name: 处理器名称
-            aliases: 别名列表
-        """
+        """初始化新闻源处理器"""
         self.name = name
         self.aliases = aliases or []
         self._register()
@@ -33,72 +23,38 @@ class BaseNewsHandler(ABC):
 
     @abstractmethod
     async def fetch_news_data(self) -> NewsData:
-        """获取新闻数据
-
-        Returns:
-            新闻数据
-        """
+        """获取新闻数据"""
         pass
 
     @abstractmethod
     async def generate_image(self, news_data: NewsData) -> Message:
-        """生成图片格式的消息
-
-        Args:
-            news_data: 新闻数据
-
-        Returns:
-            图片格式的消息
-        """
+        """生成图片格式的消息"""
         pass
 
     @abstractmethod
     async def generate_text(self, news_data: NewsData) -> Message:
-        """生成文本格式的消息
-
-        Args:
-            news_data: 新闻数据
-
-        Returns:
-            文本格式的消息
-        """
+        """生成文本格式的消息"""
         pass
 
     async def get_news_item_by_index(self, index: int) -> Optional[NewsItem]:
-        """根据索引获取新闻项
-
-        Args:
-            index: 新闻项索引
-
-        Returns:
-            新闻项或None
-        """
+        """根据索引获取新闻项"""
         try:
             news_data = await self.fetch_news_data()
-            
-            # 先尝试精确匹配索引
+
             for item in news_data.items:
                 if item.index == index:
                     return item
-            
-            # 如果没有精确匹配，尝试按位置获取
+
             if 1 <= index <= len(news_data.items):
                 return news_data.items[index - 1]
-            
+
             return None
         except Exception as e:
             logger.error(f"获取新闻项失败: {e}")
             return None
 
     async def capture_news_screenshot(self, url: str) -> Optional[bytes]:
-        """获取新闻网页截图
-
-        Args:
-            url: 新闻URL
-
-        Returns:
-            截图数据或None
-        """
+        """获取新闻网页截图"""
         return await capture_webpage_screenshot(url, site_type=self.name)
 
 
@@ -110,44 +66,50 @@ class NewsHandlerFactory:
 
     @classmethod
     def register_handler(cls, handler: BaseNewsHandler):
-        """注册处理器
+        """注册处理器"""
+        handler_name_lower = handler.name.lower()
+        cls._handlers[handler_name_lower] = handler
 
-        Args:
-            handler: 新闻源处理器
-        """
-        cls._handlers[handler.name.lower()] = handler
-        
-        # 注册别名
         for alias in handler.aliases:
-            cls._aliases[alias.lower()] = handler.name.lower()
+            alias_lower = alias.lower()
+            cls._aliases[alias_lower] = handler_name_lower
+
+        if handler.name.lower() == "ithome":
+            special_aliases = ["it", "IT"]
+            for special_alias in special_aliases:
+                cls._aliases[special_alias] = handler_name_lower
+
+        if handler.name.lower() == "知乎":
+            special_aliases = ["知乎", "zhihu", "ZHIHU"]
+            for special_alias in special_aliases:
+                cls._aliases[special_alias] = handler_name_lower
 
     @classmethod
     def get_handler(cls, name: str) -> Optional[BaseNewsHandler]:
-        """获取处理器
+        """获取处理器"""
+        if name.upper() == "IT":
+            return cls._handlers.get("ithome")
 
-        Args:
-            name: 处理器名称或别名
+        if name == "知乎":
+            return cls._handlers.get("知乎")
 
-        Returns:
-            处理器或None
-        """
-        name = name.lower()
-        
-        # 先尝试直接获取
-        if name in cls._handlers:
-            return cls._handlers[name]
-        
-        # 尝试通过别名获取
-        if name in cls._aliases:
-            return cls._handlers[cls._aliases[name]]
-        
+        name_lower = name.lower()
+
+        if name_lower in cls._handlers:
+            return cls._handlers[name_lower]
+
+        if name_lower in cls._aliases:
+            return cls._handlers[cls._aliases[name_lower]]
+
+        if name_lower == "it":
+            return cls._handlers.get("ithome")
+
+        if name_lower == "zhihu":
+            return cls._handlers.get("知乎")
+
         return None
 
     @classmethod
     def get_all_handlers(cls) -> Dict[str, BaseNewsHandler]:
-        """获取所有处理器
-
-        Returns:
-            处理器字典
-        """
+        """获取所有处理器"""
         return cls._handlers.copy()

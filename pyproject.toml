@@ -1,29 +1,35 @@
 [tool.poetry]
 name = "nonebot-plugin-multi-source-daily"
-version = "0.1.0"
+version = "0.2.1"
 description = "一个聚合多种日报源的NoneBot2插件，支持定时发送和多API源"
-authors = ["webjoin111 455457521@qq.com"]
+authors = ["webjoin111 <455457521@qq.com>"]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/yourusername/nonebot-plugin-multi-source-daily"
-repository = "https://github.com/yourusername/nonebot-plugin-multi-source-daily"
+homepage = "https://github.com/webjoin111/nonebot-plugin-multi-source-daily"
+repository = "https://github.com/webjoin111/nonebot-plugin-multi-source-daily"
 keywords = ["nonebot", "nonebot2", "daily", "news", "aggregator"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-nonebot2 = "^2.0.0"
+nonebot2 = ">=2.3.0"
 nonebot-adapter-onebot = "^2.0.0"
-nonebot-plugin-alconna = "^0.30.0"
-nonebot-plugin-apscheduler = "^0.3.0"
-nonebot-plugin-htmlrender = "^0.2.0"
-nonebot-plugin-localstore = "^0.4.0"
-httpx = "^0.23.0"
-pydantic = "^1.9.0"
+nonebot-plugin-alconna = ">=0.30.0"
+nonebot-plugin-apscheduler = ">=0.3.0"
+nonebot-plugin-htmlrender = ">=0.2.0"
+nonebot-plugin-localstore = ">=0.4.0"
+httpx = ">=0.23.0,<1.0.0"
+# Pillow 是可选依赖，用于图片优化
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"
 black = "^23.0.0"
 isort = "^5.10.0"
+
+[tool.poetry.group.image.dependencies]
+Pillow = ">=9.0.0,<10.0.0"
+
+[tool.poetry.extras]
+image = ["Pillow"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -12,36 +12,16 @@ class NewsCache:
     """新闻缓存管理类"""
 
     def __init__(self, expire_time: int = None):
-        """初始化缓存管理器
-
-        Args:
-            expire_time: 默认缓存过期时间（秒）
-        """
+        """初始化缓存管理器"""
         self.cache: dict[str, CacheItem] = {}
         self.default_expire_time = expire_time or config.daily_news_cache_expire
 
     def get_cache_key(self, news_type: str, format_type: str) -> str:
-        """生成缓存键
-
-        Args:
-            news_type: 日报类型
-            format_type: 格式类型
-
-        Returns:
-            缓存键
-        """
+        """生成缓存键"""
         return f"{news_type}:{format_type}"
 
     def get(self, news_type: str, format_type: str) -> Message | None:
-        """获取缓存
-
-        Args:
-            news_type: 日报类型
-            format_type: 格式类型
-
-        Returns:
-            缓存的消息，如果不存在或已过期则返回None
-        """
+        """获取缓存"""
         key = self.get_cache_key(news_type, format_type)
         if key in self.cache:
             cache_item = self.cache[key]
@@ -59,14 +39,7 @@ class NewsCache:
         data: Message,
         expire_time: int | None = None,
     ) -> None:
-        """设置缓存
-
-        Args:
-            news_type: 日报类型
-            format_type: 格式类型
-            data: 缓存数据
-            expire_time: 过期时间（秒），如果为None则使用默认过期时间
-        """
+        """设置缓存"""
         key = self.get_cache_key(news_type, format_type)
         expire_seconds = expire_time or self.default_expire_time
         expire_timestamp = time.time() + expire_seconds
@@ -80,15 +53,7 @@ class NewsCache:
         logger.debug(f"已缓存 {key} 的数据，过期时间: {expire_seconds}秒")
 
     def delete(self, news_type: str, format_type: str) -> bool:
-        """删除指定缓存
-
-        Args:
-            news_type: 日报类型
-            format_type: 格式类型
-
-        Returns:
-            是否成功删除
-        """
+        """删除指定缓存"""
         key = self.get_cache_key(news_type, format_type)
         if key in self.cache:
             del self.cache[key]
@@ -97,14 +62,7 @@ class NewsCache:
         return False
 
     def delete_by_type(self, news_type: str) -> int:
-        """删除指定类型的所有缓存
-
-        Args:
-            news_type: 日报类型
-
-        Returns:
-            删除的缓存数量
-        """
+        """删除指定类型的所有缓存"""
         count = 0
         keys_to_delete = []
 
@@ -122,22 +80,14 @@ class NewsCache:
         return count
 
     def clear(self) -> int:
-        """清空所有缓存
-
-        Returns:
-            清空的缓存数量
-        """
+        """清空所有缓存"""
         count = len(self.cache)
         self.cache.clear()
         logger.debug(f"已清空所有缓存，共 {count} 项")
         return count
 
     def clear_expired(self) -> int:
-        """清理过期缓存
-
-        Returns:
-            清理的缓存数量
-        """
+        """清理过期缓存"""
         count = 0
         keys_to_delete = []
 
@@ -155,11 +105,7 @@ class NewsCache:
         return count
 
     def get_status(self) -> dict[str, Any]:
-        """获取缓存状态
-
-        Returns:
-            缓存状态信息
-        """
+        """获取缓存状态"""
         types = {}
         for key in self.cache:
             news_type = key.split(":")[0]
@@ -173,11 +119,7 @@ class NewsCache:
         }
 
     def get_detailed_status(self) -> dict[str, Any]:
-        """获取详细缓存状态
-
-        Returns:
-            详细缓存状态信息
-        """
+        """获取详细缓存状态"""
         details = []
 
         for key, item in self.cache.items():

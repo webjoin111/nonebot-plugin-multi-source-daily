@@ -1,4 +1,4 @@
-from nonebot import get_driver, require
+from nonebot import get_driver, require, get_plugin_config
 from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
 
@@ -7,10 +7,28 @@ require("nonebot_plugin_apscheduler")
 require("nonebot_plugin_htmlrender")
 require("nonebot_plugin_localstore")
 
-from .config import config
+from .config import config, Config, update_config_from_global
+from .api import (
+    api_manager,
+    init_api_sources,
+    news_sources,
+)
+from .commands import (
+    daily_news,
+    daily_news_api,
+    daily_news_cache,
+    daily_news_list,
+    daily_news_schedule,
+)
+from .commands.news_detail import news_detail, quote_detail
+from .utils import (
+    news_cache,
+    schedule_manager,
+    store,
+)
 
 __plugin_meta__ = PluginMetadata(
-    name="日报",
+    name="多源日报",
     description="获取各种日报信息，支持定时发送和多API源",
     usage=(
         "【基础命令】\n"
@@ -67,28 +85,9 @@ __plugin_meta__ = PluginMetadata(
         "    - 当所有日报来源均不可用时使用\n"
     ),
     type="application",
-    homepage="https://github.com/your-username/nonebot_plugin_daily_news",
-    config=config,
+    homepage="https://github.com/webjoin111/nonebot-plugin-multi-source-daily",
+    config=Config,
     supported_adapters={"~onebot.v11"},
-)
-
-from .api import (
-    api_manager,
-    init_api_sources,
-    news_sources,
-)
-from .commands import (
-    daily_news,
-    daily_news_api,
-    daily_news_cache,
-    daily_news_list,
-    daily_news_schedule,
-)
-from .commands.news_detail import news_detail, quote_detail
-from .utils import (
-    news_cache,
-    schedule_manager,
-    store,
 )
 
 __all__ = [
@@ -109,20 +108,32 @@ driver = get_driver()
 
 @driver.on_startup
 async def startup():
-    template_path = config.get_template_dir()
+    update_config_from_global()
+
+    plugin_config = get_plugin_config(Config)
+
+    template_path = plugin_config.get_template_dir()
     template_path.mkdir(parents=True, exist_ok=True)
 
-    config_dir = config.get_config_dir()
+    config_dir = plugin_config.get_config_dir()
     config_dir.mkdir(parents=True, exist_ok=True)
 
-    data_dir = config.get_data_dir()
+    data_dir = plugin_config.get_data_dir()
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    cache_dir = config.get_cache_dir()
+    cache_dir = plugin_config.get_cache_dir()
     cache_dir.mkdir(parents=True, exist_ok=True)
     try:
         init_api_sources()
         logger.info("已初始化API源")
+
+        for source in news_sources.values():
+            source.update_default_format()
+
+        latest_config = get_plugin_config(Config)
+        logger.info(
+            f"已更新所有日报源的默认格式，全局默认格式: {latest_config.daily_news_default_format}"
+        )
 
         count = api_manager.reset_all_api_sources()
         logger.info(f"已重置所有API源状态，共 {count} 个")

@@ -37,12 +37,7 @@ async def handle_daily_news_cache(
     matcher: AlconnaMatcher,
     res: CommandResult,
 ):
-    """处理日报缓存命令
-
-    Args:
-        matcher: 匹配器
-        res: 命令结果
-    """
+    """处理日报缓存命令"""
     arp = res.result
 
     operation = arp.all_matched_args.get("operation", "状态")
@@ -57,7 +52,9 @@ async def handle_daily_news_cache(
                 return
 
             status = news_cache.get_detailed_status()
-            filtered_details = [item for item in status["details"] if item["type"] == news_type]
+            filtered_details = [
+                item for item in status["details"] if item["type"] == news_type
+            ]
 
             if not filtered_details:
                 await matcher.send(f"当前没有 {news_type} 类型的缓存")

@@ -23,12 +23,7 @@ class ApiManager:
         self.api_status: dict[str, dict[str, Any]] = {}
 
     def register_api_source(self, news_type: str, api_source: ApiSource) -> None:
-        """注册API源
-
-        Args:
-            news_type: 日报类型
-            api_source: API源
-        """
+        """注册API源"""
         if news_type not in self.api_sources:
             self.api_sources[news_type] = []
 
@@ -50,63 +45,28 @@ class ApiManager:
     def register_api_sources(
         self, news_type: str, api_sources: list[ApiSource]
     ) -> None:
-        """注册多个API源
-
-        Args:
-            news_type: 日报类型
-            api_sources: API源列表
-        """
+        """注册多个API源"""
         for api_source in api_sources:
             self.register_api_source(news_type, api_source)
 
     def get_api_sources(self, news_type: str) -> list[ApiSource]:
-        """获取指定日报类型的API源列表
-
-        Args:
-            news_type: 日报类型
-
-        Returns:
-            API源列表
-        """
+        """获取指定日报类型的API源列表"""
         return self.api_sources.get(news_type, [])
 
     def get_enabled_api_sources(self, news_type: str) -> list[ApiSource]:
-        """获取指定日报类型的已启用API源列表
-
-        Args:
-            news_type: 日报类型
-
-        Returns:
-            已启用的API源列表
-        """
+        """获取指定日报类型的已启用API源列表"""
         sources = self.get_api_sources(news_type)
         return [source for source in sources if source.enabled]
 
     def get_api_source(self, news_type: str, url: str) -> ApiSource | None:
-        """获取指定URL的API源
-
-        Args:
-            news_type: 日报类型
-            url: API URL
-
-        Returns:
-            API源，如果不存在则返回None
-        """
+        """获取指定URL的API源"""
         for source in self.get_api_sources(news_type):
             if source.url == url:
                 return source
         return None
 
     def enable_api_source(self, news_type: str, url: str) -> bool:
-        """启用API源
-
-        Args:
-            news_type: 日报类型
-            url: API URL
-
-        Returns:
-            是否成功启用
-        """
+        """启用API源"""
         source = self.get_api_source(news_type, url)
         if source:
             source.enabled = True
@@ -116,15 +76,7 @@ class ApiManager:
         return False
 
     def disable_api_source(self, news_type: str, url: str) -> bool:
-        """禁用API源
-
-        Args:
-            news_type: 日报类型
-            url: API URL
-
-        Returns:
-            是否成功禁用
-        """
+        """禁用API源"""
         source = self.get_api_source(news_type, url)
         if source:
             source.enabled = False
@@ -134,15 +86,7 @@ class ApiManager:
         return False
 
     def reset_api_source(self, news_type: str, url: str) -> bool:
-        """重置API源状态
-
-        Args:
-            news_type: 日报类型
-            url: API URL
-
-        Returns:
-            是否成功重置
-        """
+        """重置API源状态"""
         source = self.get_api_source(news_type, url)
         if source:
             source.enabled = True
@@ -159,14 +103,7 @@ class ApiManager:
         return False
 
     def reset_api_sources(self, news_type: str) -> int:
-        """重置指定日报类型的所有API源状态
-
-        Args:
-            news_type: 日报类型
-
-        Returns:
-            重置的API源数量
-        """
+        """重置指定日报类型的所有API源状态"""
         count = 0
         for source in self.get_api_sources(news_type):
             if self.reset_api_source(news_type, source.url):
@@ -174,24 +111,14 @@ class ApiManager:
         return count
 
     def reset_all_api_sources(self) -> int:
-        """重置所有API源状态
-
-        Returns:
-            重置的API源数量
-        """
+        """重置所有API源状态"""
         count = 0
         for news_type in self.api_sources:
             count += self.reset_api_sources(news_type)
         return count
 
     def update_api_source_status(self, news_type: str, url: str, success: bool) -> None:
-        """更新API源状态
-
-        Args:
-            news_type: 日报类型
-            url: API URL
-            success: 是否成功
-        """
+        """更新API源状态"""
         source = self.get_api_source(news_type, url)
         if not source:
             return
@@ -214,14 +141,7 @@ class ApiManager:
             }
 
     def get_best_api_source(self, news_type: str) -> ApiSource | None:
-        """获取最佳API源
-
-        Args:
-            news_type: 日报类型
-
-        Returns:
-            最佳API源，如果没有可用的API源则返回None
-        """
+        """获取最佳API源"""
         sources = self.get_enabled_api_sources(news_type)
         if not sources:
             return None
@@ -234,19 +154,7 @@ class ApiManager:
         return sources[0]
 
     async def fetch_data(self, news_type: str) -> NewsData:
-        """获取数据
-
-        Args:
-            news_type: 日报类型
-
-        Returns:
-            新闻数据
-
-        Raises:
-            NoAvailableAPIException: 没有可用的API源
-            APIException: API请求失败
-            APIResponseParseException: API响应解析失败
-        """
+        """获取数据"""
         source = self.get_best_api_source(news_type)
         if not source:
             raise NoAvailableAPIException(news_type=news_type)
@@ -330,14 +238,7 @@ class ApiManager:
                 raise
 
     def get_api_status(self, news_type: str | None = None) -> dict[str, Any]:
-        """获取API状态
-
-        Args:
-            news_type: 日报类型，如果为None则获取所有日报类型的状态
-
-        Returns:
-            API状态
-        """
+        """获取API状态"""
         if news_type:
             result = {
                 "news_type": news_type,

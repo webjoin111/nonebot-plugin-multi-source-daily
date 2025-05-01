@@ -1,4 +1,4 @@
-from nonebot import logger, require
+from nonebot import logger, require, get_plugin_config
 from nonebot.adapters.onebot.v11 import (
     Bot,
     GroupMessageEvent,
@@ -17,6 +17,7 @@ from nonebot_plugin_alconna import (
 )
 
 from ..api import get_news_source, news_sources
+from ..config import Config
 from ..utils import generate_news_type_error
 
 daily_news = on_alconna(
@@ -31,7 +32,7 @@ daily_news = on_alconna(
             usage="日报 [类型] [-f 格式] [--force]",
         ),
     ),
-    priority=5,
+    priority=10,
     block=True,
 )
 
@@ -56,19 +57,17 @@ async def handle_daily_news(
     matcher: AlconnaMatcher,
     res: CommandResult,
 ):
-    """处理日报命令
+    """处理日报命令"""
+    config = get_plugin_config(Config)
 
-    Args:
-        bot: 机器人实例
-        event: 事件
-        matcher: 匹配器
-        res: 命令结果
-    """
     arp = res.result
 
     news_type = arp.all_matched_args.get("news_type")
     if not news_type:
         await matcher.send("请指定日报类型")
+        return
+
+    if news_type.upper() == "API":
         return
 
     source = get_news_source(news_type)
@@ -77,13 +76,18 @@ async def handle_daily_news(
         return
 
     format_type = arp.all_matched_args.get("format_type")
+    logger.debug(
+        f"命令指定的格式: {format_type}，全局默认格式: {config.daily_news_default_format}，源默认格式: {source.default_format}"
+    )
 
     force_refresh = "-f" in arp.options or "--force" in arp.options
 
     await matcher.send(f"正在获取{news_type}日报，请稍候...")
 
     try:
-        message = await source.fetch(format_type=format_type, force_refresh=force_refresh)
+        message = await source.fetch(
+            format_type=format_type, force_refresh=force_refresh
+        )
 
         await matcher.send(message)
     except Exception as e:
@@ -93,11 +97,7 @@ async def handle_daily_news(
 
 @daily_news_list.handle()
 async def handle_daily_news_list(matcher: AlconnaMatcher):
-    """处理日报列表命令
-
-    Args:
-        matcher: 匹配器
-    """
+    """处理日报列表命令"""
     unique_sources = {}
     for name, source in news_sources.items():
         if source.name not in unique_sources:

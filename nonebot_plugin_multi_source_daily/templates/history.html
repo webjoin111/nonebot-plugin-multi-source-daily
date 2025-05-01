@@ -71,7 +71,7 @@
             <p>{{ date }}</p>
         </div>
         <div class="content">
-            {% for item in news_items %}
+            {% for item in news_items[:20] %}
             <div class="history-item">
                 <h3>{{ item.title }}</h3>
                 {% if item.description %}

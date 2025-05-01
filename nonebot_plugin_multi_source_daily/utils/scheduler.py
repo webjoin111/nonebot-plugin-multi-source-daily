@@ -7,8 +7,6 @@ from nonebot import get_bot, logger, require
 require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
 
-require("nonebot_plugin_localstore")
-import nonebot_plugin_localstore as store
 
 from ..exceptions import InvalidTimeFormatException, ScheduleException
 from .helpers import format_time, validate_time
@@ -18,11 +16,7 @@ class ScheduleManager:
     """定时任务管理器"""
 
     def __init__(self, store_instance=None):
-        """初始化定时任务管理器
-
-        Args:
-            store_instance: 存储实例
-        """
+        """初始化定时任务管理器"""
         self.store = store_instance
 
     async def add_job(
@@ -33,22 +27,7 @@ class ScheduleManager:
         minute: int,
         format_type: str = "image",
     ) -> bool:
-        """添加定时任务
-
-        Args:
-            group_id: 群组ID
-            news_type: 日报类型
-            hour: 小时
-            minute: 分钟
-            format_type: 格式类型
-
-        Returns:
-            是否成功添加
-
-        Raises:
-            ScheduleException: 定时任务操作失败
-            InvalidTimeFormatException: 无效的时间格式
-        """
+        """添加定时任务"""
         if not validate_time(hour, minute):
             raise InvalidTimeFormatException(
                 message="无效的时间",
@@ -89,7 +68,9 @@ class ScheduleManager:
             )
             return True
         except Exception as e:
-            logger.error(f"添加定时任务失败 [group_id={group_id}, news_type={news_type}]: {e}")
+            logger.error(
+                f"添加定时任务失败 [group_id={group_id}, news_type={news_type}]: {e}"
+            )
             raise ScheduleException(
                 message=f"添加定时任务失败: {e}",
                 group_id=group_id,
@@ -97,18 +78,7 @@ class ScheduleManager:
             )
 
     async def remove_job(self, group_id: int, news_type: str) -> bool:
-        """移除定时任务
-
-        Args:
-            group_id: 群组ID
-            news_type: 日报类型
-
-        Returns:
-            是否成功移除
-
-        Raises:
-            ScheduleException: 定时任务操作失败
-        """
+        """移除定时任务"""
         job_id = f"daily_news_{group_id}_{news_type}"
 
         try:
@@ -123,7 +93,9 @@ class ScheduleManager:
 
             return True
         except Exception as e:
-            logger.error(f"移除定时任务失败 [group_id={group_id}, news_type={news_type}]: {e}")
+            logger.error(
+                f"移除定时任务失败 [group_id={group_id}, news_type={news_type}]: {e}"
+            )
             raise ScheduleException(
                 message=f"移除定时任务失败: {e}",
                 group_id=group_id,
@@ -131,14 +103,7 @@ class ScheduleManager:
             )
 
     def get_jobs(self, group_id: int | None = None) -> list[dict[str, Any]]:
-        """获取定时任务列表
-
-        Args:
-            group_id: 群组ID，如果为None则获取所有任务
-
-        Returns:
-            任务列表
-        """
+        """获取定时任务列表"""
         jobs = []
 
         for job in scheduler.get_jobs():
@@ -157,11 +122,15 @@ class ScheduleManager:
             job_news_type = parts[3]
 
             next_run = job.next_run_time
-            next_run_str = next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "未知"
+            next_run_str = (
+                next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "未知"
+            )
 
             schedule_config = None
             if self.store:
-                schedule_config = self.store.get_group_schedule(job_group_id, job_news_type)
+                schedule_config = self.store.get_group_schedule(
+                    job_group_id, job_news_type
+                )
 
             format_type = "image"
             if schedule_config and "format_type" in schedule_config:
@@ -195,16 +164,7 @@ class ScheduleManager:
         news_type: str,
         format_type: str = "image",
     ) -> bool:
-        """发送日报
-
-        Args:
-            group_id: 群组ID
-            news_type: 日报类型
-            format_type: 格式类型
-
-        Returns:
-            是否成功发送
-        """
+        """发送日报"""
         try:
             bot = get_bot()
 
@@ -223,15 +183,13 @@ class ScheduleManager:
 
             return True
         except Exception as e:
-            logger.error(f"发送日报失败 [group_id={group_id}, news_type={news_type}]: {e}")
+            logger.error(
+                f"发送日报失败 [group_id={group_id}, news_type={news_type}]: {e}"
+            )
             return False
 
     async def init_jobs(self) -> bool:
-        """初始化所有定时任务
-
-        Returns:
-            是否成功初始化
-        """
+        """初始化所有定时任务"""
         try:
             if not self.store:
                 logger.warning("未提供存储实例，无法初始化定时任务")
@@ -276,18 +234,16 @@ class ScheduleManager:
             except Exception as e:
                 logger.error(f"添加缓存清理任务失败: {e}")
 
-            logger.info(f"日报调度器初始化完成，已加载 {len(scheduler.get_jobs())} 个定时任务")
+            logger.info(
+                f"日报调度器初始化完成，已加载 {len(scheduler.get_jobs())} 个定时任务"
+            )
             return True
         except Exception as e:
             logger.error(f"日报调度器初始化失败: {e}")
             return False
 
     async def clear_expired_cache(self) -> int:
-        """清理过期缓存
-
-        Returns:
-            清理的缓存数量
-        """
+        """清理过期缓存"""
         from ..utils.cache import news_cache
 
         count = news_cache.clear_expired()
@@ -300,16 +256,34 @@ class Store:
 
     def __init__(self):
         """初始化存储"""
-        config_dir = store.get_plugin_config_dir()
+        from nonebot import require
+
+        require("nonebot_plugin_localstore")
+        import nonebot_plugin_localstore as localstore
+
+        try:
+            config_dir = localstore.get_plugin_config_dir()
+        except (AttributeError, Exception):
+            try:
+                config_dir = localstore.get_config_dir(
+                    "nonebot_plugin_multi_source_daily"
+                )
+            except (AttributeError, Exception):
+                from pathlib import Path
+
+                config_dir = (
+                    Path.home()
+                    / ".nonebot"
+                    / "nonebot_plugin_multi_source_daily"
+                    / "config"
+                )
+                config_dir.mkdir(parents=True, exist_ok=True)
+
         self.config_file = config_dir / "schedules.json"
         self.data = self._load_data()
 
     def _load_data(self) -> dict[str, dict[str, dict[str, Any]]]:
-        """加载数据
-
-        Returns:
-            加载的数据
-        """
+        """加载数据"""
         self.config_file.parent.mkdir(parents=True, exist_ok=True)
 
         if not self.config_file.exists():
@@ -332,7 +306,10 @@ class Store:
 
                 cleaned_group = {}
                 for news_type, schedule in group_schedules.items():
-                    if not isinstance(schedule, dict) or "schedule_time" not in schedule:
+                    if (
+                        not isinstance(schedule, dict)
+                        or "schedule_time" not in schedule
+                    ):
                         continue
                     cleaned_group[news_type] = schedule
 
@@ -342,7 +319,9 @@ class Store:
             return cleaned_data
         except json.JSONDecodeError:
             logger.error("定时任务数据文件损坏，创建新的空数据文件")
-            backup_file = self.config_file.with_name(f"schedules.json.bak.{int(datetime.now().timestamp())}")
+            backup_file = self.config_file.with_name(
+                f"schedules.json.bak.{int(datetime.now().timestamp())}"
+            )
             try:
                 import shutil
 
@@ -359,11 +338,7 @@ class Store:
             return {}
 
     def _save_data(self) -> bool:
-        """保存数据
-
-        Returns:
-            是否成功保存
-        """
+        """保存数据"""
         try:
             self.config_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -374,68 +349,36 @@ class Store:
             logger.error(f"保存定时任务数据失败: {e}")
             return False
 
-    def get_group_schedule(self, group_id: int, news_type: str) -> dict[str, Any] | None:
-        """获取群组的定时任务配置
-
-        Args:
-            group_id: 群组ID
-            news_type: 日报类型
-
-        Returns:
-            定时任务配置
-        """
+    def get_group_schedule(
+        self, group_id: int, news_type: str
+    ) -> dict[str, Any] | None:
+        """获取群组的定时任务配置"""
         group_id_str = str(group_id)
         if group_id_str in self.data and news_type in self.data[group_id_str]:
             return self.data[group_id_str][news_type]
         return None
 
     def get_group_schedules(self, group_id: int) -> dict[str, dict[str, Any]]:
-        """获取群组的所有定时任务配置
-
-        Args:
-            group_id: 群组ID
-
-        Returns:
-            所有定时任务配置
-        """
+        """获取群组的所有定时任务配置"""
         group_id_str = str(group_id)
         return self.data.get(group_id_str, {})
 
     def get_all_schedules(self) -> dict[str, dict[str, dict[str, Any]]]:
-        """获取所有群组的定时任务配置
-
-        Returns:
-            所有群组的定时任务配置
-        """
+        """获取所有群组的定时任务配置"""
         return self.data
 
     def get_all_groups_by_news_type(self, news_type: str) -> list[str]:
-        """获取订阅了指定日报类型的所有群组
-
-        Args:
-            news_type: 日报类型
-
-        Returns:
-            群组ID列表
-        """
+        """获取订阅了指定日报类型的所有群组"""
         groups = []
         for group_id, group_schedules in self.data.items():
             if news_type in group_schedules:
                 groups.append(group_id)
         return groups
 
-    def set_group_schedule(self, group_id: int, news_type: str, schedule_time: str, format_type: str) -> bool:
-        """设置群组的定时任务配置
-
-        Args:
-            group_id: 群组ID
-            news_type: 日报类型
-            schedule_time: 定时时间
-            format_type: 格式类型
-
-        Returns:
-            是否成功设置
-        """
+    def set_group_schedule(
+        self, group_id: int, news_type: str, schedule_time: str, format_type: str
+    ) -> bool:
+        """设置群组的定时任务配置"""
         group_id_str = str(group_id)
         if group_id_str not in self.data:
             self.data[group_id_str] = {}
@@ -447,15 +390,7 @@ class Store:
         return self._save_data()
 
     def remove_group_schedule(self, group_id: int, news_type: str) -> bool:
-        """移除群组的特定日报类型的定时任务配置
-
-        Args:
-            group_id: 群组ID
-            news_type: 日报类型
-
-        Returns:
-            是否成功移除
-        """
+        """移除群组的特定日报类型的定时任务配置"""
         group_id_str = str(group_id)
         if group_id_str in self.data and news_type in self.data[group_id_str]:
             del self.data[group_id_str][news_type]

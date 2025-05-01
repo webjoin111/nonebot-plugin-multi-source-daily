@@ -13,17 +13,7 @@ class ApiParser(ABC):
 
     @abstractmethod
     async def parse(self, response: httpx.Response) -> NewsData:
-        """解析API响应
-
-        Args:
-            response: HTTP响应
-
-        Returns:
-            解析后的新闻数据
-
-        Raises:
-            APIResponseParseException: API响应解析失败
-        """
+        """解析API响应"""
         pass
 
 
@@ -31,17 +21,7 @@ class DefaultParser(ApiParser):
     """默认解析器"""
 
     async def parse(self, response: httpx.Response) -> NewsData:
-        """解析API响应
-
-        Args:
-            response: HTTP响应
-
-        Returns:
-            解析后的新闻数据
-
-        Raises:
-            APIResponseParseException: API响应解析失败
-        """
+        """解析API响应"""
         try:
             data = response.json()
 
@@ -80,17 +60,7 @@ class VVHanZhihuParser(ApiParser):
     """VVHan知乎日报解析器"""
 
     async def parse(self, response: httpx.Response) -> NewsData:
-        """解析API响应
-
-        Args:
-            response: HTTP响应
-
-        Returns:
-            解析后的新闻数据
-
-        Raises:
-            APIResponseParseException: API响应解析失败
-        """
+        """解析API响应"""
         try:
             data = response.json()
 
@@ -137,17 +107,7 @@ class OIOWebZhihuParser(ApiParser):
     """OIOWeb知乎日报解析器"""
 
     async def parse(self, response: httpx.Response) -> NewsData:
-        """解析API响应
-
-        Args:
-            response: HTTP响应
-
-        Returns:
-            解析后的新闻数据
-
-        Raises:
-            APIResponseParseException: API响应解析失败
-        """
+        """解析API响应"""
         try:
             data = response.json()
 
@@ -188,17 +148,7 @@ class RssParser(ApiParser):
     """RSS解析器"""
 
     async def parse(self, response: httpx.Response) -> NewsData:
-        """解析API响应
-
-        Args:
-            response: HTTP响应
-
-        Returns:
-            解析后的新闻数据
-
-        Raises:
-            APIResponseParseException: API响应解析失败
-        """
+        """解析API响应"""
         try:
             import feedparser
 
@@ -240,17 +190,7 @@ class BinaryImageParser(ApiParser):
     """二进制图片解析器"""
 
     async def parse(self, response: httpx.Response) -> NewsData:
-        """解析API响应
-
-        Args:
-            response: HTTP响应
-
-        Returns:
-            解析后的新闻数据
-
-        Raises:
-            APIResponseParseException: API响应解析失败
-        """
+        """解析API响应"""
         try:
             content_type = response.headers.get("Content-Type", "")
             if not content_type.startswith("image/"):
@@ -289,19 +229,10 @@ class HistoryTodayParser(ApiParser):
     """历史上的今天解析器"""
 
     async def parse(self, response: httpx.Response) -> NewsData:
-        """解析API响应
-
-        Args:
-            response: HTTP响应
-
-        Returns:
-            解析后的新闻数据
-
-        Raises:
-            APIResponseParseException: API响应解析失败
-        """
+        """解析API响应"""
         try:
             data = response.json()
+            logger.debug(f"历史上的今天API响应: {data}")
 
             today = datetime.now().strftime("%m月%d日")
             news_data = NewsData(
@@ -313,19 +244,54 @@ class HistoryTodayParser(ApiParser):
             if isinstance(data, dict) and "data" in data:
                 items = data["data"]
                 if isinstance(items, list):
-                    for i, item in enumerate(items, 1):
+                    if not items:
+                        logger.warning("历史上的今天API返回的数据列表为空")
+                        try:
+                            import json
+                            import os
+
+                            backup_file = os.path.join("assets", "history_data.json")
+                            if os.path.exists(backup_file):
+                                with open(backup_file, "r", encoding="utf-8") as f:
+                                    backup_data = json.load(f)
+                                    if (
+                                        isinstance(backup_data, dict)
+                                        and "data" in backup_data
+                                    ):
+                                        items = backup_data["data"]
+                                        logger.info(f"使用备用数据，共 {len(items)} 条")
+                        except Exception as backup_e:
+                            logger.error(f"加载备用数据失败: {backup_e}")
+
+                    for i, item in enumerate(items[:20], 1):
                         if isinstance(item, dict):
                             title = item.get("title", "")
                             year = item.get("year", "")
+                            description = item.get("description", "")
+
+                            if not title and description:
+                                title = description
+
                             if title:
                                 full_title = f"{year}年：{title}" if year else title
                                 news_data.add_item(
                                     NewsItem(
                                         title=full_title,
                                         index=i,
+                                        description=description
+                                        if description != title
+                                        else "",
                                     )
                                 )
 
+            if not news_data.items:
+                logger.warning("历史上的今天解析后没有有效数据")
+                raise APIResponseParseException(
+                    message="未获取到历史上的今天数据",
+                    parser="history_today",
+                )
+
+            logger.info(f"历史上的今天解析成功，共 {len(news_data.items)} 条数据")
             return news_data
         except Exception as e:
             logger.error(f"历史上的今天解析器解析失败: {e}")
@@ -346,14 +312,7 @@ PARSERS: dict[str, type[ApiParser]] = {
 
 
 def get_parser(parser_name: str) -> ApiParser:
-    """获取指定名称的解析器
-
-    Args:
-        parser_name: 解析器名称
-
-    Returns:
-        解析器实例
-    """
+    """获取指定名称的解析器"""
     parser_class = PARSERS.get(parser_name)
     if parser_class is None:
         logger.warning(f"未找到解析器: {parser_name}，使用默认解析器")

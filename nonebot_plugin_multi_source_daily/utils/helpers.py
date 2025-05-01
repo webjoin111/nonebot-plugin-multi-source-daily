@@ -21,22 +21,7 @@ async def fetch_with_retry(
     headers: dict[str, str] = None,
     params: dict[str, Any] = None,
 ) -> httpx.Response:
-    """带重试的HTTP请求
-
-    Args:
-        url: 请求URL
-        max_retries: 最大重试次数
-        timeout: 超时时间（秒）
-        headers: 请求头
-        params: 请求参数
-
-    Returns:
-        HTTP响应
-
-    Raises:
-        APIException: API请求失败
-        APITimeoutException: API请求超时
-    """
+    """带重试的HTTP请求"""
     max_retries = max_retries or config.daily_news_max_retries
     timeout_seconds = timeout or config.daily_news_timeout
 
@@ -95,17 +80,7 @@ async def fetch_with_retry(
 
 
 def parse_time(time_str: str) -> tuple[int, int]:
-    """解析时间字符串为小时和分钟
-
-    Args:
-        time_str: 时间字符串，格式为HH:MM或HHMM
-
-    Returns:
-        (小时, 分钟)元组
-
-    Raises:
-        InvalidTimeFormatException: 无效的时间格式
-    """
+    """解析时间字符串为小时和分钟"""
     try:
         if ":" in time_str:
             hour, minute = time_str.split(":")
@@ -126,46 +101,22 @@ def parse_time(time_str: str) -> tuple[int, int]:
 
 
 def validate_time(hour: int, minute: int) -> bool:
-    """验证时间是否有效
-
-    Args:
-        hour: 小时
-        minute: 分钟
-
-    Returns:
-        时间是否有效
-    """
+    """验证时间是否有效"""
     return 0 <= hour < 24 and 0 <= minute < 60
 
 
 def format_time(hour: int, minute: int) -> str:
-    """格式化时间
-
-    Args:
-        hour: 小时
-        minute: 分钟
-
-    Returns:
-        格式化后的时间字符串
-    """
+    """格式化时间"""
     return f"{hour:02d}:{minute:02d}"
 
 
 def get_current_time() -> str:
-    """获取当前时间
-
-    Returns:
-        当前时间字符串
-    """
+    """获取当前时间"""
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_today_date() -> str:
-    """获取今天的日期
-
-    Returns:
-        今天的日期字符串
-    """
+    """获取今天的日期"""
     return datetime.now().strftime("%Y年%m月%d日")
 
 
@@ -175,17 +126,7 @@ async def render_news_to_image(
     title: str,
     template_data: dict[str, Any] = None,
 ) -> bytes:
-    """渲染新闻数据为图片
-
-    Args:
-        news_data: 新闻数据
-        template_name: 模板名称
-        title: 标题
-        template_data: 额外的模板数据
-
-    Returns:
-        图片数据
-    """
+    """渲染新闻数据为图片"""
     if hasattr(news_data, "binary_data"):
         return news_data.binary_data
 
@@ -231,15 +172,7 @@ async def render_news_to_image(
 
 
 def generate_news_type_error(invalid_type: str, news_sources: dict[str, Any]) -> str:
-    """生成更友好的日报类型错误提示
-
-    Args:
-        invalid_type: 无效的日报类型
-        news_sources: 日报源字典
-
-    Returns:
-        错误提示字符串
-    """
+    """生成友好的日报类型错误提示"""
     unique_sources = {}
     for name, source in news_sources.items():
         if source.name not in unique_sources:

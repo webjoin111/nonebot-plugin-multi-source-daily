@@ -19,7 +19,7 @@ class NewsItem:
     pub_time: str = ""
 
     def to_dict(self) -> dict[str, Any]:
-        """转换为字典"""
+        """转为字典"""
         return {
             "title": self.title,
             "url": self.url,
@@ -50,7 +50,7 @@ class NewsData:
         self.items.append(item)
 
     def to_dict(self) -> dict[str, Any]:
-        """转换为字典"""
+        """转为字典"""
         return {
             "title": self.title,
             "items": [item.to_dict() for item in self.items],
@@ -71,7 +71,7 @@ class ApiSource:
     failure_count: int = 0
 
     def to_dict(self) -> dict[str, Any]:
-        """转换为字典"""
+        """转为字典"""
         return {
             "url": self.url,
             "priority": self.priority,
@@ -105,7 +105,7 @@ class NewsSource:
     aliases: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        """转换为字典"""
+        """转为字典"""
         return {
             "name": self.name,
             "description": self.description,
@@ -124,7 +124,7 @@ class ScheduleConfig:
     format_type: str = "image"
 
     def to_dict(self) -> dict[str, Any]:
-        """转换为字典"""
+        """转为字典"""
         return {
             "schedule_time": self.schedule_time,
             "format_type": self.format_type,
@@ -132,7 +132,7 @@ class ScheduleConfig:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ScheduleConfig":
-        """从字典创建实例"""
+        """从字典创建"""
         return cls(
             schedule_time=data.get("schedule_time", "00:00"),
             format_type=data.get("format_type", "image"),
@@ -169,7 +169,7 @@ class ApiStatus:
     parser: str = "default"
 
     def to_dict(self) -> dict[str, Any]:
-        """转换为字典"""
+        """转为字典"""
         return {
             "url": self.url,
             "enabled": self.enabled,
@@ -194,7 +194,7 @@ class NewsTypeInfo:
     api_sources: list[ApiStatus] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        """转换为字典"""
+        """转为字典"""
         return {
             "name": self.name,
             "description": self.description,

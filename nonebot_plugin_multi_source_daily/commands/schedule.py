@@ -1,8 +1,3 @@
-"""定时日报命令模块
-
-提供定时日报相关的命令实现，包括设置、取消和查看等功能。
-"""
-
 import datetime
 from pathlib import Path
 
@@ -42,7 +37,9 @@ from ..utils import (
     validate_time,
 )
 
-CUSTOM_CSS_PATH = str(Path(__file__).parent.parent / "templates" / "custom_markdown.css")
+CUSTOM_CSS_PATH = str(
+    Path(__file__).parent.parent / "templates" / "custom_markdown.css"
+)
 
 TIME_REGEX = r"(0?[0-9]|1[0-9]|2[0-3]):([0-5][0-9])|(0?[0-9]|1[0-9]|2[0-3])([0-5][0-9])"
 
@@ -96,14 +93,7 @@ async def handle_daily_news_set(
     matcher: AlconnaMatcher,
     res: CommandResult,
 ):
-    """处理定时日报设置命令
-
-    Args:
-        bot: 机器人实例
-        event: 事件
-        matcher: 匹配器
-        res: 命令结果
-    """
+    """处理定时日报设置命令"""
     is_superuser = await SUPERUSER(bot, event)
     if not is_superuser:
         await matcher.send("只有超级用户才能使用此命令")
@@ -142,7 +132,9 @@ async def handle_daily_news_set(
 
     format_type = arp.all_matched_args.get("format_type", "image")
     if format_type not in source.formats:
-        await matcher.send(f"不支持的格式: {format_type}，可用格式: {', '.join(source.formats)}")
+        await matcher.send(
+            f"不支持的格式: {format_type}，可用格式: {', '.join(source.formats)}"
+        )
         return
 
     try:
@@ -158,7 +150,9 @@ async def handle_daily_news_set(
 
             for group in group_list:
                 try:
-                    await schedule_manager.add_job(group["group_id"], news_type, hour, minute, format_type)
+                    await schedule_manager.add_job(
+                        group["group_id"], news_type, hour, minute, format_type
+                    )
                     success_count += 1
                 except Exception as e:
                     logger.error(f"为群 {group['group_id']} 设置定时任务失败: {e}")
@@ -170,7 +164,9 @@ async def handle_daily_news_set(
             return
 
         if target_group:
-            await schedule_manager.add_job(target_group, news_type, hour, minute, format_type)
+            await schedule_manager.add_job(
+                target_group, news_type, hour, minute, format_type
+            )
             await matcher.send(
                 f"已为群 {target_group} 设置{news_type}日报，"
                 f"时间: {hour:02d}:{minute:02d}，格式: {format_type}"
@@ -179,7 +175,9 @@ async def handle_daily_news_set(
 
         if isinstance(event, GroupMessageEvent):
             group_id = event.group_id
-            await schedule_manager.add_job(group_id, news_type, hour, minute, format_type)
+            await schedule_manager.add_job(
+                group_id, news_type, hour, minute, format_type
+            )
             await matcher.send(
                 f"已为本群设置{news_type}日报，时间: {hour:02d}:{minute:02d}，格式: {format_type}"
             )
@@ -202,14 +200,7 @@ async def handle_daily_news_remove(
     matcher: AlconnaMatcher,
     res: CommandResult,
 ):
-    """处理定时日报取消命令
-
-    Args:
-        bot: 机器人实例
-        event: 事件
-        matcher: 匹配器
-        res: 命令结果
-    """
+    """处理定时日报取消命令"""
     is_superuser = await SUPERUSER(bot, event)
     if not is_superuser:
         await matcher.send("只有超级用户才能使用此命令")
@@ -254,7 +245,9 @@ async def handle_daily_news_remove(
                 except Exception as e:
                     logger.error(f"为群 {group_id} 取消定时任务失败: {e}")
 
-            await matcher.send(f"已取消所有群({removed_count}/{len(groups)}个)的{news_type}日报定时任务")
+            await matcher.send(
+                f"已取消所有群({removed_count}/{len(groups)}个)的{news_type}日报定时任务"
+            )
             return
 
         if target_group:
@@ -283,14 +276,7 @@ async def handle_daily_news_view(
     matcher: AlconnaMatcher,
     res: CommandResult,
 ):
-    """处理定时日报查看命令
-
-    Args:
-        bot: 机器人实例
-        event: 事件
-        matcher: 匹配器
-        res: 命令结果
-    """
+    """处理定时日报查看命令"""
     arp = res.result
 
     target_group = None
@@ -343,12 +329,16 @@ async def handle_daily_news_view(
                     else:
                         for news_type, schedule in schedules.items():
                             source = get_news_source(news_type)
-                            news_description = source.description if source else "未知日报类型"
+                            news_description = (
+                                source.description if source else "未知日报类型"
+                            )
                             schedule_time = schedule.get("schedule_time", "未知时间")
                             format_type = schedule.get("format_type", "image")
 
                             message += f"  - {news_type} ({news_description})\n"
-                            message += f"    时间: {schedule_time}, 格式: {format_type}\n"
+                            message += (
+                                f"    时间: {schedule_time}, 格式: {format_type}\n"
+                            )
 
                     message += "\n"
 
@@ -375,7 +365,9 @@ async def handle_daily_news_view(
 
                     for news_type, schedule in schedules.items():
                         source = get_news_source(news_type)
-                        news_description = source.description if source else "未知日报类型"
+                        news_description = (
+                            source.description if source else "未知日报类型"
+                        )
                         schedule_time = schedule.get("schedule_time", "未知时间")
                         format_type = schedule.get("format_type", "image")
 
@@ -385,7 +377,10 @@ async def handle_daily_news_view(
                                 hour, minute = schedule_time.split(":")
                                 now = datetime.datetime.now()
                                 next_datetime = now.replace(
-                                    hour=int(hour), minute=int(minute), second=0, microsecond=0
+                                    hour=int(hour),
+                                    minute=int(minute),
+                                    second=0,
+                                    microsecond=0,
                                 )
                                 if next_datetime <= now:
                                     next_datetime += datetime.timedelta(days=1)
@@ -415,7 +410,9 @@ async def handle_daily_news_view(
                         md_text += "该群没有订阅任何日报\n\n"
                     else:
                         for job in group["jobs"]:
-                            md_text += f"### {job['news_type']} ({job['news_description']})\n"
+                            md_text += (
+                                f"### {job['news_type']} ({job['news_description']})\n"
+                            )
                             md_text += f"- **订阅时间**: {job['schedule_time']}\n"
                             md_text += f"- **下次推送**: {job['next_run']}\n"
                             md_text += f"- **格式**: {job['format_type']}\n\n"
@@ -468,13 +465,17 @@ async def handle_daily_news_view(
                 )
 
             if use_text:
-                message = f"【{group_name} 的日报订阅情况】\n查询时间: {current_time}\n\n"
+                message = (
+                    f"【{group_name} 的日报订阅情况】\n查询时间: {current_time}\n\n"
+                )
 
                 if not jobs:
                     message += "该群没有订阅任何日报"
                 else:
                     for idx, job in enumerate(jobs, 1):
-                        message += f"{idx}. {job['news_type']} ({job['news_description']})\n"
+                        message += (
+                            f"{idx}. {job['news_type']} ({job['news_description']})\n"
+                        )
                         message += f"   - 订阅时间: {job['schedule_time']}\n"
                         message += f"   - 下次推送: {job['next_run']}\n"
                         message += f"   - 格式: {job['format_type']}\n\n"
@@ -550,13 +551,17 @@ async def handle_daily_news_view(
                 )
 
             if use_text:
-                message = f"【{group_name} 的日报订阅情况】\n查询时间: {current_time}\n\n"
+                message = (
+                    f"【{group_name} 的日报订阅情况】\n查询时间: {current_time}\n\n"
+                )
 
                 if not jobs:
                     message += "本群没有订阅任何日报"
                 else:
                     for idx, job in enumerate(jobs, 1):
-                        message += f"{idx}. {job['news_type']} ({job['news_description']})\n"
+                        message += (
+                            f"{idx}. {job['news_type']} ({job['news_description']})\n"
+                        )
                         message += f"   - 订阅时间: {job['schedule_time']}\n"
                         message += f"   - 下次推送: {job['next_run']}\n"
                         message += f"   - 格式: {job['format_type']}\n\n"

@@ -1,7 +1,4 @@
-"""日报API管理命令模块
-
-提供日报API源管理相关的命令实现，包括查看、启用/禁用和重置等功能。
-"""
+"""日报API管理命令模块"""
 
 from nonebot import require
 from nonebot.adapters.onebot.v11 import MessageSegment
@@ -59,7 +56,7 @@ daily_news_api = on_alconna(
         ),
     ),
     permission=SUPERUSER,
-    priority=5,
+    priority=1,
     block=True,
 )
 
@@ -69,12 +66,7 @@ async def handle_daily_news_api(
     matcher: AlconnaMatcher,
     res: CommandResult,
 ):
-    """处理日报API命令
-
-    Args:
-        matcher: 匹配器
-        res: 命令结果
-    """
+    """处理日报API命令"""
     arp = res.result
 
     if not arp.subcommands:
@@ -106,12 +98,7 @@ async def handle_daily_news_api(
 
 
 async def handle_api_list(matcher: AlconnaMatcher, use_text: bool = False):
-    """处理API源列表查看
-
-    Args:
-        matcher: 匹配器
-        use_text: 是否使用文本方式显示
-    """
+    """处理API源列表查看"""
     api_status = api_manager.get_api_status()
 
     if use_text:
@@ -157,6 +144,7 @@ async def handle_api_list(matcher: AlconnaMatcher, use_text: bool = False):
 
                 if source["last_success"] > 0:
                     import time
+
                     last_success_time = time.strftime(
                         "%Y-%m-%d %H:%M:%S",
                         time.localtime(source["last_success"]),
@@ -175,14 +163,7 @@ async def handle_api_list(matcher: AlconnaMatcher, use_text: bool = False):
 async def handle_api_toggle(
     matcher: AlconnaMatcher, news_type: str, index: int, enable: bool = True
 ):
-    """处理API源启用/禁用
-
-    Args:
-        matcher: 匹配器
-        news_type: 日报类型
-        index: API源序号
-        enable: 是否启用
-    """
+    """处理API源启用/禁用"""
     sources = api_manager.get_api_sources(news_type)
     if not sources:
         await matcher.send(f"未知的日报类型: {news_type}")
@@ -206,13 +187,7 @@ async def handle_api_toggle(
 async def handle_api_reset(
     matcher: AlconnaMatcher, news_type: str = None, reset_all: bool = False
 ):
-    """处理API源重置
-
-    Args:
-        matcher: 匹配器
-        news_type: 日报类型
-        reset_all: 是否重置所有类型
-    """
+    """处理API源重置"""
     if reset_all or (news_type and news_type.lower() == "all"):
         count = api_manager.reset_all_api_sources()
         await matcher.send(f"已重置所有日报类型的API源状态，共 {count} 个")

@@ -1,15 +1,17 @@
-"""网页截图工具模块
-
-提供网页截图相关的功能，包括截图获取、图片优化等。
-"""
-
 from io import BytesIO
 
 from nonebot import logger, require
-from PIL import Image
 
 require("nonebot_plugin_htmlrender")
 from nonebot_plugin_htmlrender import get_new_page
+
+try:
+    from PIL import Image
+
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+    logger.warning("PIL模块不可用，图片优化功能将受限")
 
 COMMON_IMAGE_SCRIPT = """
     // 处理所有图片，尝试优化加载
@@ -51,7 +53,10 @@ SITE_SCRIPTS = {
             '.ad', '.advertisement', '#comment', '.comment',
             '.related', '.recommend', '.share', '.social',
             '.copyright', '.tags', '.author-info',
-            '.dy-live-bar', '.ad-tips', '.lazyload-placeholder'
+            '.dy-live-bar', '.ad-tips', '.lazyload-placeholder',
+            '#dt > div.fr.fx', // 移除右侧浮动元素
+            '#dt > div.fl.content > iframe', // 移除内容区域中的iframe
+            '#post_comm' // 移除评论区
         ];
 
         for (const selector of elementsToHide) {
@@ -62,7 +67,7 @@ SITE_SCRIPTS = {
         }
 
         // 优化文章内容元素的显示
-        const content = document.querySelector('#dt');
+        const content = document.querySelector('#dt > div.fl.content');
         if (content) {
             content.style.padding = '20px';
             content.style.margin = '0 auto';
@@ -101,12 +106,16 @@ SITE_SCRIPTS = {
                 }
             });
 
-            // 处理可能的iframe（视频等）
+            // 移除所有iframe
             const iframes = content.querySelectorAll('iframe');
             iframes.forEach(iframe => {
-                iframe.style.maxWidth = '100%';
-                iframe.style.display = 'block';
-                iframe.style.margin = '10px auto';
+                iframe.remove();
+            });
+
+            // 移除评论区和相关推荐
+            const commentsAndRelated = content.querySelectorAll('#post_comm, .post_related, .post_comment, .post_next');
+            commentsAndRelated.forEach(el => {
+                el.remove();
             });
         }
 
@@ -162,7 +171,7 @@ SITE_SCRIPTS = {
         }
 
         // 优化文章内容元素的显示
-        const content = document.querySelector('.Post-RichTextContainer, .RichContent-inner');
+        const content = document.querySelector('#root');
         if (content) {
             content.style.padding = '20px';
             content.style.margin = '0 auto';
@@ -254,7 +263,7 @@ SITE_SCRIPTS = {
     """,
 }
 
-SITE_SELECTORS = {"ithome": "#dt", "知乎": ".Post-RichTextContainer, .RichContent-inner"}
+SITE_SELECTORS = {"ithome": "#dt > div.fl.content", "知乎": "#root"}
 
 
 async def capture_webpage_screenshot(
@@ -267,21 +276,7 @@ async def capture_webpage_screenshot(
     wait_time: int = 2000,
     timeout: int = 30000,
 ) -> bytes | None:
-    """获取网页截图
-
-    Args:
-        url: 网页URL
-        site_type: 网站类型，用于应用预定义的处理逻辑
-        selector: CSS选择器，如果提供则只截取该元素
-        custom_script: 自定义JavaScript脚本，在截图前执行
-        viewport_width: 视口宽度
-        viewport_height: 视口高度
-        wait_time: 等待图片加载的时间(毫秒)
-        timeout: 页面加载超时时间(毫秒)
-
-    Returns:
-        截图数据或None
-    """
+    """获取网页截图"""
     try:
         if site_type and site_type.lower() in SITE_SELECTORS:
             selector = selector or SITE_SELECTORS[site_type.lower()]
@@ -293,7 +288,9 @@ async def capture_webpage_screenshot(
             except Exception as timeout_e:
                 logger.warning(f"页面加载超时，尝试继续处理: {timeout_e}")
 
-            await page.set_viewport_size({"width": viewport_width, "height": viewport_height})
+            await page.set_viewport_size(
+                {"width": viewport_width, "height": viewport_height}
+            )
 
             await page.evaluate(COMMON_IMAGE_SCRIPT)
 
@@ -334,7 +331,9 @@ async def capture_webpage_screenshot(
                         return optimize_image(pic)
                     else:
                         logger.warning(f"未找到元素: {selector}")
-                        pic = await page.screenshot(full_page=True, type="jpeg", quality=75)
+                        pic = await page.screenshot(
+                            full_page=True, type="jpeg", quality=75
+                        )
                         return optimize_image(pic)
                 except Exception as element_e:
                     logger.warning(f"截取元素失败: {element_e}，将截取整个页面")
@@ -349,16 +348,14 @@ async def capture_webpage_screenshot(
 
 
 def optimize_image(image_data: bytes, max_size: int = 3 * 1024 * 1024) -> bytes:
-    """优化图片大小，确保不超过最大限制
-
-    Args:
-        image_data: 原始图片数据
-        max_size: 最大图片大小（字节），默认3MB
-
-    Returns:
-        优化后的图片数据
-    """
+    """优化图片大小"""
     if len(image_data) <= max_size:
+        return image_data
+
+    if not HAS_PIL:
+        logger.warning(
+            f"PIL不可用，无法优化图片，原始大小: {len(image_data) / 1024:.1f}KB"
+        )
         return image_data
 
     try:

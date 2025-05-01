@@ -1,32 +1,40 @@
-"""新闻处理器模块
-
-包含各种新闻源的处理器实现。
-"""
-
 from .base_handler import BaseNewsHandler, NewsHandlerFactory
-from .ithome_handler import ITHomeNewsHandler
-from .zhihu_handler import ZhihuNewsHandler
+from .ithome_handler import ithome_handler
+from .zhihu_handler import zhihu_handler
 
-# 导出工厂和基类
-__all__ = ["BaseNewsHandler", "NewsHandlerFactory", "get_news_handler", "get_all_handlers"]
+__all__ = [
+    "BaseNewsHandler",
+    "NewsHandlerFactory",
+    "get_news_handler",
+    "get_all_handlers",
+    "ithome_handler",
+    "zhihu_handler",
+]
 
 
 def get_news_handler(name: str):
-    """获取新闻处理器
+    """获取新闻处理器"""
+    if name.upper() == "IT":
+        return ithome_handler
 
-    Args:
-        name: 处理器名称或别名
+    if name == "知乎":
+        return zhihu_handler
 
-    Returns:
-        处理器或None
-    """
-    return NewsHandlerFactory.get_handler(name)
+    handler = NewsHandlerFactory.get_handler(name)
+    if handler:
+        return handler
+
+    handler = NewsHandlerFactory.get_handler(name.lower())
+    if handler:
+        return handler
+
+    handler = NewsHandlerFactory.get_handler(name.capitalize())
+    if handler:
+        return handler
+
+    return None
 
 
 def get_all_handlers():
-    """获取所有处理器
-
-    Returns:
-        处理器字典
-    """
+    """获取所有处理器"""
     return NewsHandlerFactory.get_all_handlers()

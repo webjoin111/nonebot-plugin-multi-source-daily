@@ -20,22 +20,11 @@ class MoyuNewsSource(BaseNewsSource):
         )
 
     async def fetch_data(self) -> NewsData:
-        """获取原始数据
-
-        Returns:
-            新闻数据
-        """
+        """获取原始数据"""
         return await api_manager.fetch_data(self.name)
 
     async def generate_image(self, news_data: NewsData) -> Message:
-        """生成图片格式的消息
-
-        Args:
-            news_data: 新闻数据
-
-        Returns:
-            图片格式的消息
-        """
+        """生成图片格式的消息"""
         pic = await render_news_to_image(
             news_data,
             "moyu.html",
@@ -49,14 +38,7 @@ class MoyuNewsSource(BaseNewsSource):
             return Message("获取摸鱼人日历失败：未获取到图片数据")
 
     async def generate_text(self, news_data: NewsData) -> Message:
-        """生成文本格式的消息
-
-        Args:
-            news_data: 新闻数据
-
-        Returns:
-            文本格式的消息
-        """
+        """生成文本格式的消息"""
         return Message("摸鱼人日历仅支持图片格式，请使用 '日报 摸鱼 -f image' 命令获取")
 
 
