@@ -8,7 +8,7 @@ require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
 
 require("nonebot_plugin_localstore")
-import nonebot_plugin_localstore as store
+import nonebot_plugin_localstore as localstore
 
 from ..exceptions import InvalidTimeFormatException, ScheduleException
 from .helpers import format_time, validate_time
@@ -300,7 +300,7 @@ class Store:
 
     def __init__(self):
         """初始化存储"""
-        config_dir = store.get_plugin_config_dir()
+        config_dir = localstore.get_plugin_config_dir()
         self.config_file = config_dir / "schedules.json"
         self.data = self._load_data()
 
