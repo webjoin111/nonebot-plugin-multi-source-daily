@@ -7,8 +7,6 @@ from nonebot import get_bot, logger, require
 require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
 
-require("nonebot_plugin_localstore")
-import nonebot_plugin_localstore as localstore
 
 from ..exceptions import InvalidTimeFormatException, ScheduleException
 from .helpers import format_time, validate_time
@@ -89,7 +87,9 @@ class ScheduleManager:
             )
             return True
         except Exception as e:
-            logger.error(f"添加定时任务失败 [group_id={group_id}, news_type={news_type}]: {e}")
+            logger.error(
+                f"添加定时任务失败 [group_id={group_id}, news_type={news_type}]: {e}"
+            )
             raise ScheduleException(
                 message=f"添加定时任务失败: {e}",
                 group_id=group_id,
@@ -123,7 +123,9 @@ class ScheduleManager:
 
             return True
         except Exception as e:
-            logger.error(f"移除定时任务失败 [group_id={group_id}, news_type={news_type}]: {e}")
+            logger.error(
+                f"移除定时任务失败 [group_id={group_id}, news_type={news_type}]: {e}"
+            )
             raise ScheduleException(
                 message=f"移除定时任务失败: {e}",
                 group_id=group_id,
@@ -157,11 +159,15 @@ class ScheduleManager:
             job_news_type = parts[3]
 
             next_run = job.next_run_time
-            next_run_str = next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "未知"
+            next_run_str = (
+                next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "未知"
+            )
 
             schedule_config = None
             if self.store:
-                schedule_config = self.store.get_group_schedule(job_group_id, job_news_type)
+                schedule_config = self.store.get_group_schedule(
+                    job_group_id, job_news_type
+                )
 
             format_type = "image"
             if schedule_config and "format_type" in schedule_config:
@@ -223,7 +229,9 @@ class ScheduleManager:
 
             return True
         except Exception as e:
-            logger.error(f"发送日报失败 [group_id={group_id}, news_type={news_type}]: {e}")
+            logger.error(
+                f"发送日报失败 [group_id={group_id}, news_type={news_type}]: {e}"
+            )
             return False
 
     async def init_jobs(self) -> bool:
@@ -276,7 +284,9 @@ class ScheduleManager:
             except Exception as e:
                 logger.error(f"添加缓存清理任务失败: {e}")
 
-            logger.info(f"日报调度器初始化完成，已加载 {len(scheduler.get_jobs())} 个定时任务")
+            logger.info(
+                f"日报调度器初始化完成，已加载 {len(scheduler.get_jobs())} 个定时任务"
+            )
             return True
         except Exception as e:
             logger.error(f"日报调度器初始化失败: {e}")
@@ -300,6 +310,11 @@ class Store:
 
     def __init__(self):
         """初始化存储"""
+        from nonebot import require
+
+        require("nonebot_plugin_localstore")
+        import nonebot_plugin_localstore as localstore
+
         config_dir = localstore.get_plugin_config_dir()
         self.config_file = config_dir / "schedules.json"
         self.data = self._load_data()
@@ -332,7 +347,10 @@ class Store:
 
                 cleaned_group = {}
                 for news_type, schedule in group_schedules.items():
-                    if not isinstance(schedule, dict) or "schedule_time" not in schedule:
+                    if (
+                        not isinstance(schedule, dict)
+                        or "schedule_time" not in schedule
+                    ):
                         continue
                     cleaned_group[news_type] = schedule
 
@@ -342,7 +360,9 @@ class Store:
             return cleaned_data
         except json.JSONDecodeError:
             logger.error("定时任务数据文件损坏，创建新的空数据文件")
-            backup_file = self.config_file.with_name(f"schedules.json.bak.{int(datetime.now().timestamp())}")
+            backup_file = self.config_file.with_name(
+                f"schedules.json.bak.{int(datetime.now().timestamp())}"
+            )
             try:
                 import shutil
 
@@ -374,7 +394,9 @@ class Store:
             logger.error(f"保存定时任务数据失败: {e}")
             return False
 
-    def get_group_schedule(self, group_id: int, news_type: str) -> dict[str, Any] | None:
+    def get_group_schedule(
+        self, group_id: int, news_type: str
+    ) -> dict[str, Any] | None:
         """获取群组的定时任务配置
 
         Args:
@@ -424,7 +446,9 @@ class Store:
                 groups.append(group_id)
         return groups
 
-    def set_group_schedule(self, group_id: int, news_type: str, schedule_time: str, format_type: str) -> bool:
+    def set_group_schedule(
+        self, group_id: int, news_type: str, schedule_time: str, format_type: str
+    ) -> bool:
         """设置群组的定时任务配置
 
         Args:
