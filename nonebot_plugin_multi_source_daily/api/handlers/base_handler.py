@@ -1,13 +1,8 @@
-"""新闻源处理器基类
-
-定义新闻源处理器的基本接口和通用功能。
-"""
-
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional
 
 from nonebot import logger
-from nonebot.adapters.onebot.v11 import Message, MessageSegment
+from nonebot.adapters.onebot.v11 import Message
 
 from ...models import NewsData, NewsItem
 from ...utils.screenshot import capture_webpage_screenshot
@@ -75,16 +70,14 @@ class BaseNewsHandler(ABC):
         """
         try:
             news_data = await self.fetch_news_data()
-            
-            # 先尝试精确匹配索引
+
             for item in news_data.items:
                 if item.index == index:
                     return item
-            
-            # 如果没有精确匹配，尝试按位置获取
+
             if 1 <= index <= len(news_data.items):
                 return news_data.items[index - 1]
-            
+
             return None
         except Exception as e:
             logger.error(f"获取新闻项失败: {e}")
@@ -115,11 +108,22 @@ class NewsHandlerFactory:
         Args:
             handler: 新闻源处理器
         """
-        cls._handlers[handler.name.lower()] = handler
-        
-        # 注册别名
+        handler_name_lower = handler.name.lower()
+        cls._handlers[handler_name_lower] = handler
+
         for alias in handler.aliases:
-            cls._aliases[alias.lower()] = handler.name.lower()
+            alias_lower = alias.lower()
+            cls._aliases[alias_lower] = handler_name_lower
+
+        if handler.name.lower() == "ithome":
+            special_aliases = ["it", "IT"]
+            for special_alias in special_aliases:
+                cls._aliases[special_alias] = handler_name_lower
+
+        if handler.name.lower() == "知乎":
+            special_aliases = ["知乎", "zhihu", "ZHIHU"]
+            for special_alias in special_aliases:
+                cls._aliases[special_alias] = handler_name_lower
 
     @classmethod
     def get_handler(cls, name: str) -> Optional[BaseNewsHandler]:
@@ -131,16 +135,26 @@ class NewsHandlerFactory:
         Returns:
             处理器或None
         """
-        name = name.lower()
-        
-        # 先尝试直接获取
-        if name in cls._handlers:
-            return cls._handlers[name]
-        
-        # 尝试通过别名获取
-        if name in cls._aliases:
-            return cls._handlers[cls._aliases[name]]
-        
+        if name.upper() == "IT":
+            return cls._handlers.get("ithome")
+
+        if name == "知乎":
+            return cls._handlers.get("知乎")
+
+        name_lower = name.lower()
+
+        if name_lower in cls._handlers:
+            return cls._handlers[name_lower]
+
+        if name_lower in cls._aliases:
+            return cls._handlers[cls._aliases[name_lower]]
+
+        if name_lower == "it":
+            return cls._handlers.get("ithome")
+
+        if name_lower == "zhihu":
+            return cls._handlers.get("知乎")
+
         return None
 
     @classmethod

@@ -78,6 +78,14 @@ class BaseNewsSource(ABC):
         try:
             news_data = await self.fetch_data()
 
+            if (
+                not news_data
+                or not hasattr(news_data, "items")
+                or len(news_data.items) == 0
+            ):
+                logger.warning(f"获取{self.name}日报失败: 未获取到有效数据")
+                return Message(f"获取{self.name}日报失败: 未获取到有效数据")
+
             if format_type == "image":
                 message = await self.generate_image(news_data)
             elif format_type == "text":
@@ -88,7 +96,13 @@ class BaseNewsSource(ABC):
                     supported_formats=self.formats,
                 )
 
-            news_cache.set(self.name, format_type, message)
+            if message and len(message) > 0:
+                if format_type == "image" and message[0].type == "image":
+                    identifier = f"#daily_type:{self.name}"
+                    message.append(identifier)
+                    logger.debug(f"已为{self.name}日报添加标识符: {identifier}")
+
+                news_cache.set(self.name, format_type, message)
 
             return message
         except Exception as e:
@@ -158,14 +172,13 @@ def get_news_source(name: str) -> BaseNewsSource | None:
     Returns:
         日报源，如果不存在则返回None
     """
-    # 先尝试从现有源获取
     source = news_sources.get(name)
     if source:
         return source
 
-    # 如果没有找到，尝试从适配器获取
     try:
         from ..adapter import get_adapter
+
         return get_adapter(name)
     except (ImportError, Exception) as e:
         logger.debug(f"从适配器获取新闻源失败: {e}")

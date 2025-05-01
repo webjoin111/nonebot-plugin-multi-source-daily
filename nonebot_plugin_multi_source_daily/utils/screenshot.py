@@ -1,8 +1,3 @@
-"""网页截图工具模块
-
-提供网页截图相关的功能，包括截图获取、图片优化等。
-"""
-
 from io import BytesIO
 
 from nonebot import logger, require
@@ -51,7 +46,10 @@ SITE_SCRIPTS = {
             '.ad', '.advertisement', '#comment', '.comment',
             '.related', '.recommend', '.share', '.social',
             '.copyright', '.tags', '.author-info',
-            '.dy-live-bar', '.ad-tips', '.lazyload-placeholder'
+            '.dy-live-bar', '.ad-tips', '.lazyload-placeholder',
+            '#dt > div.fr.fx', // 移除右侧浮动元素
+            '#dt > div.fl.content > iframe', // 移除内容区域中的iframe
+            '#post_comm' // 移除评论区
         ];
 
         for (const selector of elementsToHide) {
@@ -62,7 +60,7 @@ SITE_SCRIPTS = {
         }
 
         // 优化文章内容元素的显示
-        const content = document.querySelector('#dt');
+        const content = document.querySelector('#dt > div.fl.content');
         if (content) {
             content.style.padding = '20px';
             content.style.margin = '0 auto';
@@ -101,12 +99,16 @@ SITE_SCRIPTS = {
                 }
             });
 
-            // 处理可能的iframe（视频等）
+            // 移除所有iframe
             const iframes = content.querySelectorAll('iframe');
             iframes.forEach(iframe => {
-                iframe.style.maxWidth = '100%';
-                iframe.style.display = 'block';
-                iframe.style.margin = '10px auto';
+                iframe.remove();
+            });
+
+            // 移除评论区和相关推荐
+            const commentsAndRelated = content.querySelectorAll('#post_comm, .post_related, .post_comment, .post_next');
+            commentsAndRelated.forEach(el => {
+                el.remove();
             });
         }
 
@@ -162,7 +164,7 @@ SITE_SCRIPTS = {
         }
 
         // 优化文章内容元素的显示
-        const content = document.querySelector('.Post-RichTextContainer, .RichContent-inner');
+        const content = document.querySelector('#root');
         if (content) {
             content.style.padding = '20px';
             content.style.margin = '0 auto';
@@ -254,7 +256,7 @@ SITE_SCRIPTS = {
     """,
 }
 
-SITE_SELECTORS = {"ithome": "#dt", "知乎": ".Post-RichTextContainer, .RichContent-inner"}
+SITE_SELECTORS = {"ithome": "#dt > div.fl.content", "知乎": "#root"}
 
 
 async def capture_webpage_screenshot(
@@ -293,7 +295,9 @@ async def capture_webpage_screenshot(
             except Exception as timeout_e:
                 logger.warning(f"页面加载超时，尝试继续处理: {timeout_e}")
 
-            await page.set_viewport_size({"width": viewport_width, "height": viewport_height})
+            await page.set_viewport_size(
+                {"width": viewport_width, "height": viewport_height}
+            )
 
             await page.evaluate(COMMON_IMAGE_SCRIPT)
 
@@ -334,7 +338,9 @@ async def capture_webpage_screenshot(
                         return optimize_image(pic)
                     else:
                         logger.warning(f"未找到元素: {selector}")
-                        pic = await page.screenshot(full_page=True, type="jpeg", quality=75)
+                        pic = await page.screenshot(
+                            full_page=True, type="jpeg", quality=75
+                        )
                         return optimize_image(pic)
                 except Exception as element_e:
                     logger.warning(f"截取元素失败: {element_e}，将截取整个页面")

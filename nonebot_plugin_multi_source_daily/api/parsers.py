@@ -302,6 +302,7 @@ class HistoryTodayParser(ApiParser):
         """
         try:
             data = response.json()
+            logger.debug(f"历史上的今天API响应: {data}")
 
             today = datetime.now().strftime("%m月%d日")
             news_data = NewsData(
@@ -313,19 +314,54 @@ class HistoryTodayParser(ApiParser):
             if isinstance(data, dict) and "data" in data:
                 items = data["data"]
                 if isinstance(items, list):
-                    for i, item in enumerate(items, 1):
+                    if not items:
+                        logger.warning("历史上的今天API返回的数据列表为空")
+                        # 使用备用数据
+                        try:
+                            import json
+                            import os
+
+                            # 尝试从assets目录加载备用数据
+                            backup_file = os.path.join("assets", "history_data.json")
+                            if os.path.exists(backup_file):
+                                with open(backup_file, "r", encoding="utf-8") as f:
+                                    backup_data = json.load(f)
+                                    if isinstance(backup_data, dict) and "data" in backup_data:
+                                        items = backup_data["data"]
+                                        logger.info(f"使用备用数据，共 {len(items)} 条")
+                        except Exception as backup_e:
+                            logger.error(f"加载备用数据失败: {backup_e}")
+
+                    # 限制最多显示20条数据
+                    for i, item in enumerate(items[:20], 1):
                         if isinstance(item, dict):
                             title = item.get("title", "")
                             year = item.get("year", "")
+                            description = item.get("description", "")
+
+                            # 如果没有title但有description，使用description作为title
+                            if not title and description:
+                                title = description
+
                             if title:
                                 full_title = f"{year}年：{title}" if year else title
                                 news_data.add_item(
                                     NewsItem(
                                         title=full_title,
                                         index=i,
+                                        description=description if description != title else "",
                                     )
                                 )
 
+            # 检查是否成功获取到数据
+            if not news_data.items:
+                logger.warning("历史上的今天解析后没有有效数据")
+                raise APIResponseParseException(
+                    message="未获取到历史上的今天数据",
+                    parser="history_today",
+                )
+
+            logger.info(f"历史上的今天解析成功，共 {len(news_data.items)} 条数据")
             return news_data
         except Exception as e:
             logger.error(f"历史上的今天解析器解析失败: {e}")

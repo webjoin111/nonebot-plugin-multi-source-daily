@@ -32,7 +32,6 @@ class Config(BaseModel):
                 priority=1,
                 parser="vvhan",
             ),
-            ApiSource(url="https://api.03c3.cn/api/zhihu", priority=2, parser="oioweb"),
         ]
     )
 
@@ -40,11 +39,6 @@ class Config(BaseModel):
         default_factory=lambda: [
             ApiSource(
                 url="https://api.vvhan.com/api/moyu", priority=1, parser="binary_image"
-            ),
-            ApiSource(
-                url="https://api.j4u.ink/v1/store/other/moyu/proxy",
-                priority=2,
-                parser="binary_image",
             ),
         ]
     )

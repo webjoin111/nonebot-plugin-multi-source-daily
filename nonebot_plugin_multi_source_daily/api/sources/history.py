@@ -43,6 +43,18 @@ class HistoryNewsSource(BaseNewsSource):
         Returns:
             图片格式的消息
         """
+        from nonebot import logger
+
+        # 限制条目数量为20条
+        if len(news_data.items) > 20:
+            logger.info(f"历史上的今天条目过多，限制为20条 (原有{len(news_data.items)}条)")
+            news_data.items = news_data.items[:20]
+
+        # 确保每个条目都有索引
+        for i, item in enumerate(news_data.items):
+            if not item.index:
+                item.index = i + 1
+
         # 渲染模板
         pic = await render_news_to_image(
             news_data,
@@ -67,7 +79,7 @@ class HistoryNewsSource(BaseNewsSource):
         from nonebot import logger
 
         # 限制条目数量，避免消息过长
-        max_items = 10
+        max_items = 20
         if len(news_data.items) > max_items:
             logger.info(f"历史上的今天文本格式条目过多，限制为{max_items}条 (原有{len(news_data.items)}条)")
             news_data.items = news_data.items[:max_items]

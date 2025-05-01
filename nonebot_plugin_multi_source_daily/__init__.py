@@ -8,6 +8,24 @@ require("nonebot_plugin_htmlrender")
 require("nonebot_plugin_localstore")
 
 from .config import config
+from .api import (
+    api_manager,
+    init_api_sources,
+    news_sources,
+)
+from .commands import (
+    daily_news,
+    daily_news_api,
+    daily_news_cache,
+    daily_news_list,
+    daily_news_schedule,
+)
+from .commands.news_detail import news_detail, quote_detail
+from .utils import (
+    news_cache,
+    schedule_manager,
+    store,
+)
 
 __plugin_meta__ = PluginMetadata(
     name="日报",
@@ -67,28 +85,9 @@ __plugin_meta__ = PluginMetadata(
         "    - 当所有日报来源均不可用时使用\n"
     ),
     type="application",
-    homepage="https://github.com/your-username/nonebot_plugin_daily_news",
+    homepage="https://github.com/webjoin111/nonebot-plugin-multi-source-daily",
     config=config,
     supported_adapters={"~onebot.v11"},
-)
-
-from .api import (
-    api_manager,
-    init_api_sources,
-    news_sources,
-)
-from .commands import (
-    daily_news,
-    daily_news_api,
-    daily_news_cache,
-    daily_news_list,
-    daily_news_schedule,
-)
-from .commands.news_detail import news_detail, quote_detail
-from .utils import (
-    news_cache,
-    schedule_manager,
-    store,
 )
 
 __all__ = [
