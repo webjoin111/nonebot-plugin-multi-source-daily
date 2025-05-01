@@ -1,0 +1,125 @@
+
+                <!DOCTYPE html>
+                <html lang="zh-CN">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>知乎日报</title>
+                    <style>
+                        body {
+                            font-family: "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+                            margin: 0;
+                            padding: 20px;
+                            background-color: #f5f5f5;
+                            color: #333;
+                        }
+                        .container {
+                            max-width: 800px;
+                            margin: 0 auto;
+                            background-color: #fff;
+                            border-radius: 10px;
+                            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+                            overflow: hidden;
+                        }
+                        .header {
+                            background-color: #0066FF;
+                            color: white;
+                            padding: 20px;
+                            text-align: center;
+                        }
+                        .header h1 {
+                            margin: 0;
+                            font-size: 24px;
+                        }
+                        .date {
+                            color: rgba(255, 255, 255, 0.8);
+                            margin-top: 5px;
+                            font-size: 14px;
+                        }
+                        .news-list {
+                            padding: 20px;
+                        }
+                        .news-item {
+                            border-bottom: 1px solid #eee;
+                            padding: 15px 0;
+                        }
+                        .news-item:last-child {
+                            border-bottom: none;
+                        }
+                        .news-rank {
+                            display: inline-block;
+                            width: 24px;
+                            height: 24px;
+                            line-height: 24px;
+                            text-align: center;
+                            background-color: #f0f0f0;
+                            color: #666;
+                            border-radius: 50%;
+                            margin-right: 10px;
+                            font-size: 14px;
+                            font-weight: bold;
+                        }
+                        .news-rank.top1 {
+                            background-color: #FF4D4F;
+                            color: white;
+                        }
+                        .news-rank.top2 {
+                            background-color: #FF7A45;
+                            color: white;
+                        }
+                        .news-rank.top3 {
+                            background-color: #FFA940;
+                            color: white;
+                        }
+                        .news-title {
+                            font-size: 18px;
+                            font-weight: bold;
+                            margin-bottom: 10px;
+                            color: #333;
+                        }
+                        .news-hot {
+                            font-size: 12px;
+                            color: #FF4D4F;
+                            margin-left: 10px;
+                        }
+                        .news-link {
+                            display: inline-block;
+                            font-size: 13px;
+                            color: #0066FF;
+                            text-decoration: none;
+                            margin-top: 5px;
+                        }
+                        .footer {
+                            text-align: center;
+                            padding: 15px;
+                            font-size: 12px;
+                            color: #999;
+                            background-color: #f9f9f9;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>知乎日报</h1>
+                            <div class="date">{{ date }}</div>
+                        </div>
+                        <div class="news-list">
+                            {% for item in news_items %}
+                            <div class="news-item">
+                                <span class="news-rank {% if item.index == 1 %}top1{% elif item.index == 2 %}top2{% elif item.index == 3 %}top3{% endif %}">{{ item.index }}</span>
+                                <span class="news-title">{{ item.title }}</span>
+                                <span class="news-hot">{{ item.hot }}</span>
+                                <div>
+                                    <a href="{{ item.url }}" class="news-link">查看详情</a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="footer">
+                            来源：知乎热榜 | 由日报插件生成
+                        </div>
+                    </div>
+                </body>
+                </html>
+                

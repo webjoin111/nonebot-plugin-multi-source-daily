@@ -1,0 +1,188 @@
+from nonebot import logger, require
+from nonebot.adapters.onebot.v11 import (
+    Message,
+    MessageEvent,
+    MessageSegment,
+)
+
+require("nonebot_plugin_alconna")
+from nonebot_plugin_alconna import (
+    Alconna,
+    AlconnaMatcher,
+    Args,
+    CommandMeta,
+    CommandResult,
+    on_alconna,
+)
+
+from ..api.handlers import get_news_handler
+from ..utils.screenshot import capture_webpage_screenshot
+
+news_detail = on_alconna(
+    Alconna(
+        "日报详情",
+        Args["news_type", str],
+        Args["index", int],
+        meta=CommandMeta(
+            compact=True,
+            description="获取指定日报类型的特定序号新闻详情",
+            usage="日报详情 [类型] [数字]",
+        ),
+    ),
+    priority=5,
+    block=True,
+)
+
+quote_detail = on_alconna(
+    Alconna(
+        Args["index", int],
+        meta=CommandMeta(
+            description="回复日报图片并指定数字，获取该序号新闻的详情",
+            usage="回复日报图片 + [数字]",
+        ),
+    ),
+    priority=5,
+    block=True,
+)
+
+
+async def extract_news_type_from_reply(event: MessageEvent) -> str | None:
+    """从回复消息中提取日报类型
+
+    Args:
+        event: 消息事件
+
+    Returns:
+        日报类型或None
+    """
+    if not event.reply:
+        return None
+
+    reply_msg = event.reply.message
+
+    has_image = False
+    for seg in reply_msg:
+        if seg.type == "image":
+            has_image = True
+            break
+
+    if not has_image:
+        return None
+
+    text = reply_msg.extract_plain_text()
+
+    type_keywords = {
+        "IT之家": ["it之家", "it", "ithome"],
+        "知乎": ["知乎", "zhihu"],
+        "历史上的今天": ["历史上的今天", "历史", "history"],
+    }
+
+    for news_type, keywords in type_keywords.items():
+        for keyword in keywords:
+            if keyword.lower() in text.lower():
+                return news_type
+
+    return None
+
+
+@news_detail.handle()
+async def handle_news_detail(
+    matcher: AlconnaMatcher,
+    res: CommandResult,
+):
+    """处理日报详情命令
+
+    Args:
+        matcher: 匹配器
+        res: 命令结果
+    """
+    arp = res.result
+
+    news_type = arp.all_matched_args.get("news_type")
+    index = arp.all_matched_args.get("index")
+
+    if not news_type or not index:
+        await matcher.send("请指定日报类型和数字")
+        return
+
+    handler = get_news_handler(news_type)
+    if not handler:
+        await matcher.send(f"未找到{news_type}类型的日报处理器")
+        return
+
+    news_item = await handler.get_news_item_by_index(index)
+    if not news_item:
+        await matcher.send(f"未找到{news_type}日报的第{index}条新闻")
+        return
+
+    if not news_item.url:
+        await matcher.send(f"第{index}条新闻没有可访问的链接")
+        return
+
+    await matcher.send(f"正在获取 {news_item.title} 的网页截图，请稍候...")
+
+    pic = await capture_webpage_screenshot(url=news_item.url, site_type=handler.name)
+
+    if not pic:
+        await matcher.send(f"获取网页截图失败，您可以直接访问: {news_item.url}")
+        return
+
+    try:
+        await matcher.send(Message(MessageSegment.image(pic)))
+    except Exception as e:
+        logger.error(f"发送图片失败: {e}")
+        await matcher.send(f"发送图片失败，您可以直接访问: {news_item.url}")
+
+
+@quote_detail.handle()
+async def handle_quote_detail(
+    event: MessageEvent,
+    matcher: AlconnaMatcher,
+    res: CommandResult,
+):
+    """处理引用回复获取详情命令
+
+    Args:
+        event: 事件
+        matcher: 匹配器
+        res: 命令结果
+    """
+    arp = res.result
+
+    index = arp.all_matched_args.get("index")
+    if not index:
+        await matcher.send("请指定数字")
+        return
+
+    news_type = await extract_news_type_from_reply(event)
+    if not news_type:
+        await matcher.send("无法识别日报类型，请使用格式：日报详情 [类型] [数字]")
+        return
+
+    handler = get_news_handler(news_type)
+    if not handler:
+        await matcher.send(f"未找到{news_type}类型的日报处理器")
+        return
+
+    news_item = await handler.get_news_item_by_index(index)
+    if not news_item:
+        await matcher.send(f"未找到{news_type}日报的第{index}条新闻")
+        return
+
+    if not news_item.url:
+        await matcher.send(f"第{index}条新闻没有可访问的链接")
+        return
+
+    await matcher.send(f"正在获取 {news_item.title} 的网页截图，请稍候...")
+
+    pic = await capture_webpage_screenshot(url=news_item.url, site_type=handler.name)
+
+    if not pic:
+        await matcher.send(f"获取网页截图失败，您可以直接访问: {news_item.url}")
+        return
+
+    try:
+        await matcher.send(Message(MessageSegment.image(pic)))
+    except Exception as e:
+        logger.error(f"发送图片失败: {e}")
+        await matcher.send(f"发送图片失败，您可以直接访问: {news_item.url}")

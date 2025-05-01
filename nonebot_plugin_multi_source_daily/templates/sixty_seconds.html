@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #333;
+            font-size: 24px;
+        }
+        .header p {
+            margin: 5px 0 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .news-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .news-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .news-item:last-child {
+            border-bottom: none;
+        }
+        .news-title {
+            margin: 0 0 5px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+        .news-meta {
+            font-size: 12px;
+            color: #999;
+        }
+        .news-description {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ title }}</h1>
+            <p>更新时间: {{ update_time }}</p>
+        </div>
+        
+        <ul class="news-list">
+            {% for item in news_items %}
+            <li class="news-item">
+                <h3 class="news-title">{{ item.index }}. {{ item.title }}</h3>
+                {% if item.description %}
+                <div class="news-description">{{ item.description }}</div>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        
+        <div class="footer">
+            每日60秒读懂世界
+        </div>
+    </div>
+</body>
+</html>

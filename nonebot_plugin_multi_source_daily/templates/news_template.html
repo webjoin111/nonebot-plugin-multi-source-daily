@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background-color: #3498db;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .date {
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        .news-list {
+            padding: 20px;
+        }
+        .news-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .news-item:last-child {
+            border-bottom: none;
+        }
+        .news-rank {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            background-color: #f0f0f0;
+            color: #666;
+            border-radius: 50%;
+            margin-right: 10px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .news-rank.top1 {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .news-rank.top2 {
+            background-color: #e67e22;
+            color: white;
+        }
+        .news-rank.top3 {
+            background-color: #f1c40f;
+            color: white;
+        }
+        .news-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .news-desc {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        .news-hot {
+            font-size: 12px;
+            color: #e74c3c;
+            margin-left: 10px;
+        }
+        .news-link {
+            display: inline-block;
+            font-size: 13px;
+            color: #3498db;
+            text-decoration: none;
+        }
+        .news-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+        .footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 12px;
+            color: #999;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ title }}</h1>
+            <div class="date">{{ date }}</div>
+        </div>
+        <div class="news-list">
+            {% for item in news_items %}
+            <div class="news-item">
+                <div>
+                    <span class="news-rank {% if item.index == 1 %}top1{% elif item.index == 2 %}top2{% elif item.index == 3 %}top3{% endif %}">{{ item.index }}</span>
+                    <span class="news-title">{{ item.title }}</span>
+                    {% if item.hot %}
+                    <span class="news-hot">{{ item.hot }}</span>
+                    {% endif %}
+                </div>
+                {% if item.description %}
+                <div class="news-desc">{{ item.description }}</div>
+                {% endif %}
+                <div>
+                    <a href="{{ item.url }}" class="news-link">查看详情</a>
+                    {% if item.pub_time %}
+                    <div class="news-time">{{ item.pub_time }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="footer">
+            来源：{{ title }} | 由日报插件生成
+        </div>
+    </div>
+</body>
+</html>
