@@ -315,7 +315,16 @@ class Store:
         require("nonebot_plugin_localstore")
         import nonebot_plugin_localstore as localstore
 
-        config_dir = localstore.get_plugin_config_dir()
+        try:
+            config_dir = localstore.get_plugin_config_dir()
+        except (AttributeError, Exception):
+            try:
+                config_dir = localstore.get_config_dir("nonebot_plugin_multi_source_daily")
+            except (AttributeError, Exception):
+                from pathlib import Path
+                config_dir = Path.home() / ".nonebot" / "nonebot_plugin_multi_source_daily" / "config"
+                config_dir.mkdir(parents=True, exist_ok=True)
+
         self.config_file = config_dir / "schedules.json"
         self.data = self._load_data()
 

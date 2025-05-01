@@ -7,7 +7,7 @@ require("nonebot_plugin_apscheduler")
 require("nonebot_plugin_htmlrender")
 require("nonebot_plugin_localstore")
 
-from .config import config
+from .config import config, Config
 from .api import (
     api_manager,
     init_api_sources,
@@ -86,7 +86,7 @@ __plugin_meta__ = PluginMetadata(
     ),
     type="application",
     homepage="https://github.com/webjoin111/nonebot-plugin-multi-source-daily",
-    config=config,
+    config=Config,
     supported_adapters={"~onebot.v11"},
 )
 

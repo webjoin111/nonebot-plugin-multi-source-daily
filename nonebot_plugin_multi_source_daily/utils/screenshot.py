@@ -1,10 +1,16 @@
 from io import BytesIO
 
 from nonebot import logger, require
-from PIL import Image
 
 require("nonebot_plugin_htmlrender")
 from nonebot_plugin_htmlrender import get_new_page
+
+try:
+    from PIL import Image
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+    logger.warning("PIL模块不可用，图片优化功能将受限")
 
 COMMON_IMAGE_SCRIPT = """
     // 处理所有图片，尝试优化加载
@@ -365,6 +371,10 @@ def optimize_image(image_data: bytes, max_size: int = 3 * 1024 * 1024) -> bytes:
         优化后的图片数据
     """
     if len(image_data) <= max_size:
+        return image_data
+
+    if not HAS_PIL:
+        logger.warning(f"PIL不可用，无法优化图片，原始大小: {len(image_data)/1024:.1f}KB")
         return image_data
 
     try:
