@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from nonebot import require
-from pydantic import BaseModel, ConfigDict, Field
+from nonebot import require, get_plugin_config
+from pydantic import BaseModel, Field
 
 require("nonebot_plugin_localstore")
 import nonebot_plugin_localstore as store
@@ -61,7 +61,6 @@ class Config(BaseModel):
 
     daily_news_max_retries: int = 3
     daily_news_timeout: float = 10.0
-    daily_news_config_dir: str | None = None
     daily_news_cache_expire: int = 3600
     daily_news_auto_failover: bool = True
 
@@ -75,7 +74,8 @@ class Config(BaseModel):
     daily_news_enable_stats: bool = False
     daily_news_stats_save_interval: int = 3600
 
-    model_config = ConfigDict(extra="ignore")
+    class Config:
+        extra = "ignore"
 
     def get_api_sources(self, news_type: str) -> list[ApiSource]:
         """获取指定日报类型的API源列表"""
@@ -90,10 +90,7 @@ class Config(BaseModel):
 
     def get_config_dir(self) -> Path:
         """获取配置目录"""
-        if self.daily_news_config_dir:
-            return Path(self.daily_news_config_dir)
-        config_dir = store.get_plugin_config_dir()
-        return config_dir
+        return store.get_plugin_config_dir()
 
     def get_data_dir(self) -> Path:
         """获取数据目录"""
@@ -120,9 +117,21 @@ def update_config_from_global():
     from nonebot import get_driver
 
     global config
-    driver = get_driver()
 
-    # 使用model_dump替代已弃用的dict方法
-    for key, value in driver.config.model_dump().items():
-        if key.startswith("daily_news_") and hasattr(config, key):
-            setattr(config, key, value)
+    try:
+        plugin_config = get_plugin_config(Config)
+        config = plugin_config
+    except Exception:
+        driver = get_driver()
+
+        try:
+            config_dict = driver.config.model_dump()
+        except AttributeError:
+            try:
+                config_dict = driver.config.dict()
+            except AttributeError:
+                config_dict = {}
+
+        for key, value in config_dict.items():
+            if key.startswith("daily_news_") and hasattr(config, key):
+                setattr(config, key, value)

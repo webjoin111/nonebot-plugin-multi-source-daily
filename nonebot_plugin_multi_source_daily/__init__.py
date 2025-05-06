@@ -7,7 +7,7 @@ require("nonebot_plugin_apscheduler")
 require("nonebot_plugin_htmlrender")
 require("nonebot_plugin_localstore")
 
-from .config import config, Config
+from .config import config, Config, update_config_from_global
 from .api import (
     api_manager,
     init_api_sources,
@@ -28,7 +28,7 @@ from .utils import (
 )
 
 __plugin_meta__ = PluginMetadata(
-    name="日报",
+    name="多源日报",
     description="获取各种日报信息，支持定时发送和多API源",
     usage=(
         "【基础命令】\n"
@@ -108,6 +108,8 @@ driver = get_driver()
 
 @driver.on_startup
 async def startup():
+    update_config_from_global()
+
     template_path = config.get_template_dir()
     template_path.mkdir(parents=True, exist_ok=True)
 
