@@ -153,89 +153,162 @@ class ApiManager:
 
         return sources[0]
 
-    async def fetch_data(self, news_type: str) -> NewsData:
-        """获取数据"""
+    async def fetch_data(self, news_type: str, extra_params: dict = None) -> NewsData:
+        """获取数据
+
+        Args:
+            news_type: 日报类型
+            extra_params: 额外的请求参数
+        """
         source = self.get_best_api_source(news_type)
         if not source:
             raise NoAvailableAPIException(news_type=news_type)
 
         parser = get_parser(source.parser)
 
+        # 记录是否启用了故障转移
+        failover_enabled = config.daily_news_auto_failover
+        logger.debug(
+            f"日报类型: {news_type}, 主API源: {source.url}, 故障转移已{'启用' if failover_enabled else '禁用'}"
+        )
+
         try:
+            # 解析URL中可能已经包含的查询参数
+            url = source.url
+            params = {}
+
+            # 添加额外的请求参数
+            if extra_params:
+                params.update(extra_params)
+                logger.debug(f"添加额外请求参数: {extra_params}")
+
+            # 如果URL中已经包含查询参数，不再额外添加
+            logger.debug(f"尝试请求主API源: {url}, 参数: {params}")
+
             response = await fetch_with_retry(
-                source.url,
+                url,
                 max_retries=config.daily_news_max_retries,
                 timeout=config.daily_news_timeout,
+                params=params,
             )
 
             try:
                 news_data = await parser.parse(response)
 
                 self.update_api_source_status(news_type, source.url, True)
+                logger.debug(f"成功从API源 {source.url} 获取 {news_type} 日报数据")
 
                 return news_data
             except Exception as e:
                 self.update_api_source_status(news_type, source.url, False)
 
                 logger.error(f"API响应解析失败: {e}")
+
+                # 如果启用了故障转移，尝试其他API源
+                if failover_enabled:
+                    logger.warning(f"API源 {source.url} 响应解析失败，尝试其他API源")
+                    return await self._try_failover_sources(
+                        news_type, source.url, extra_params
+                    )
+
                 raise APIResponseParseException(
                     message=f"API响应解析失败: {e}",
                     api_url=source.url,
                     parser=source.parser,
                 )
-        except APIException:
+        except APIException as e:
             self.update_api_source_status(news_type, source.url, False)
+            logger.error(f"API请求失败: {e}")
 
-            if config.daily_news_auto_failover:
+            # 如果启用了故障转移，尝试其他API源
+            if failover_enabled:
                 logger.warning(f"API源 {source.url} 请求失败，尝试其他API源")
+                return await self._try_failover_sources(
+                    news_type, source.url, extra_params
+                )
+            else:
+                logger.warning("故障转移已禁用，不尝试其他API源")
+                raise
+        except Exception as e:
+            self.update_api_source_status(news_type, source.url, False)
+            logger.error(f"获取数据时发生未知错误: {e}")
 
-                other_sources = [
-                    s
-                    for s in self.get_enabled_api_sources(news_type)
-                    if s.url != source.url
-                ]
-
-                if not other_sources:
-                    raise NoAvailableAPIException(news_type=news_type)
-
-                other_sources.sort(key=lambda x: x.priority)
-
-                for other_source in other_sources:
-                    try:
-                        other_parser = get_parser(other_source.parser)
-
-                        other_response = await fetch_with_retry(
-                            other_source.url,
-                            max_retries=config.daily_news_max_retries,
-                            timeout=config.daily_news_timeout,
-                        )
-
-                        try:
-                            news_data = await other_parser.parse(other_response)
-
-                            self.update_api_source_status(
-                                news_type, other_source.url, True
-                            )
-
-                            return news_data
-                        except Exception as parse_e:
-                            self.update_api_source_status(
-                                news_type, other_source.url, False
-                            )
-                            logger.error(
-                                f"备用API源 {other_source.url} 响应解析失败: {parse_e}"
-                            )
-                    except Exception as other_e:
-                        self.update_api_source_status(
-                            news_type, other_source.url, False
-                        )
-                        logger.error(
-                            f"备用API源 {other_source.url} 请求失败: {other_e}"
-                        )
-
-                raise NoAvailableAPIException(news_type=news_type)
+            # 如果启用了故障转移，尝试其他API源
+            if failover_enabled:
+                logger.warning(f"API源 {source.url} 发生未知错误，尝试其他API源")
+                return await self._try_failover_sources(
+                    news_type, source.url, extra_params
+                )
             else:
                 raise
+
+    async def _try_failover_sources(
+        self, news_type: str, failed_url: str, extra_params: dict = None
+    ) -> NewsData:
+        """尝试使用备用API源
+
+        Args:
+            news_type: 日报类型
+            failed_url: 失败的API源URL
+            extra_params: 额外的请求参数
+        """
+        other_sources = [
+            s for s in self.get_enabled_api_sources(news_type) if s.url != failed_url
+        ]
+
+        if not other_sources:
+            logger.error(f"没有可用的备用API源，日报类型: {news_type}")
+            raise NoAvailableAPIException(news_type=news_type)
+
+        other_sources.sort(key=lambda x: x.priority)
+        logger.info(f"找到 {len(other_sources)} 个备用API源，将按优先级尝试")
+
+        for other_source in other_sources:
+            try:
+                other_parser = get_parser(other_source.parser)
+                logger.info(
+                    f"尝试备用API源: {other_source.url}, 优先级: {other_source.priority}"
+                )
+
+                # 解析URL中可能已经包含的查询参数
+                url = other_source.url
+                params = {}
+
+                # 添加额外的请求参数
+                if extra_params:
+                    params.update(extra_params)
+                    logger.debug(f"添加额外请求参数: {extra_params}")
+
+                # 如果URL中已经包含查询参数，不再额外添加
+                logger.debug(f"尝试请求备用API源: {url}, 参数: {params}")
+
+                other_response = await fetch_with_retry(
+                    url,
+                    max_retries=config.daily_news_max_retries,
+                    timeout=config.daily_news_timeout,
+                    params=params,
+                )
+
+                try:
+                    news_data = await other_parser.parse(other_response)
+
+                    self.update_api_source_status(news_type, other_source.url, True)
+                    logger.info(
+                        f"成功从备用API源 {other_source.url} 获取 {news_type} 日报数据"
+                    )
+
+                    return news_data
+                except Exception as parse_e:
+                    self.update_api_source_status(news_type, other_source.url, False)
+                    logger.error(
+                        f"备用API源 {other_source.url} 响应解析失败: {parse_e}"
+                    )
+            except Exception as other_e:
+                self.update_api_source_status(news_type, other_source.url, False)
+                logger.error(f"备用API源 {other_source.url} 请求失败: {other_e}")
+
+        logger.error(f"所有备用API源都失败，日报类型: {news_type}")
+        raise NoAvailableAPIException(news_type=news_type)
 
     def get_api_status(self, news_type: str | None = None) -> dict[str, Any]:
         """获取API状态"""

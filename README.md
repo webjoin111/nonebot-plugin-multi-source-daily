@@ -26,7 +26,6 @@ _✨ 一个聚合多种日报源的NoneBot2插件，支持定时发送和多API�
 - **详情查看功能**：支持查看日报中特定新闻的详细内容
 - **API源管理**：提供完善的API源管理功能，可以启用/禁用/重置特定API源
 
-
 ## 💿 安装
 
 ### 使用 nb-cli 安装（推荐）
@@ -80,7 +79,7 @@ DAILY_NEWS_DEFAULT_FORMAT=image
 
 | 日报类型 | 说明 | 默认API源数量 |
 |---------|------|--------------|
-| 60s | 60秒看世界 | 2 |
+| 60s | 60秒看世界 | 1 |
 | 知乎 | 知乎日报 | 1 |
 | moyu | 摸鱼日报 | 1 |
 | ithome | IT之家日报 | 1 |
@@ -209,7 +208,6 @@ DAILY_NEWS_DEFAULT_FORMAT=image
 ```python
 # 60秒看世界API源
 DAILY_NEWS_60S_APIS=[
-    {"url": "https://api.03c3.cn/api/zb", "priority": 1, "parser": "binary_image"},
     {"url": "https://api.southerly.top/api/60s", "priority": 2, "parser": "binary_image"}
 ]
 
@@ -259,6 +257,7 @@ DAILY_NEWS_HISTORY_APIS=[
 ### 日志说明
 
 插件会在以下情况输出日志：
+
 - API请求失败时
 - API源状态变更时
 - 定时任务执行时
@@ -269,6 +268,7 @@ DAILY_NEWS_HISTORY_APIS=[
 ### 数据存储
 
 插件使用 nonebot-plugin-localstore 管理数据存储，数据文件位于：
+
 - 配置文件：`~/.nonebot/nonebot-plugin-multi-source-daily/config/`
 - 缓存文件：`~/.nonebot/nonebot-plugin-multi-source-daily/cache/`
 - 数据文件：`~/.nonebot/nonebot-plugin-multi-source-daily/data/`
@@ -278,7 +278,6 @@ DAILY_NEWS_HISTORY_APIS=[
 - 本插件从 v0.2.0 开始兼容 pydantic v1 和 v2 版本
 - 支持 NoneBot2 v2.3.0 及以上版本
 - 依赖的插件版本限制已放宽，支持更多环境
-
 
 ## 🔧 依赖
 
@@ -297,6 +296,7 @@ DAILY_NEWS_HISTORY_APIS=[
 ### 可选依赖
 
 - **Pillow**：用于图片优化功能，可以减小图片大小，提高发送速度
+
   ```bash
   pip install nonebot-plugin-multi-source-daily[image]
   ```
@@ -304,15 +304,16 @@ DAILY_NEWS_HISTORY_APIS=[
   在某些环境中，可能需要先安装系统依赖：
 
   CentOS/RHEL:
+
   ```bash
   sudo yum install python-devel zlib-devel libjpeg-turbo-devel
   ```
 
   Ubuntu/Debian:
+
   ```bash
   sudo apt-get install python3-dev zlib1g-dev libjpeg-dev
   ```
-
 
 ## 🙏 鸣谢
 

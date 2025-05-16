@@ -47,11 +47,28 @@ async def fetch_with_retry(
                 )
 
                 if response.status_code != 200:
-                    raise APIException(
+                    error = APIException(
                         message="API请求失败",
                         status_code=response.status_code,
                         api_url=url,
                     )
+                    if response.status_code in [429, 500, 502, 503, 504]:
+                        last_error = error
+                        retries += 1
+                        logger.warning(
+                            f"服务器返回错误状态码 {response.status_code}，第{retries}次重试: {url}"
+                        )
+
+                        retry_after = response.headers.get("Retry-After")
+                        if retry_after and retry_after.isdigit():
+                            await asyncio.sleep(int(retry_after))
+                        else:
+                            await asyncio.sleep(retry_delay)
+                            retry_delay *= 1.5
+
+                        continue
+                    else:
+                        raise error
 
                 return response
 
@@ -127,7 +144,9 @@ async def render_news_to_image(
     template_data: dict[str, Any] = None,
 ) -> bytes:
     """渲染新闻数据为图片"""
-    if hasattr(news_data, "binary_data"):
+    if hasattr(news_data, "binary_data") and news_data.binary_data is not None:
+        from nonebot import logger
+        logger.debug(f"检测到二进制图片数据，大小: {len(news_data.binary_data)} 字节，直接使用")
         return news_data.binary_data
 
     template_path = config.get_template_dir()

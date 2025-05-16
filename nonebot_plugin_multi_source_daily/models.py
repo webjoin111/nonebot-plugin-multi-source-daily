@@ -39,6 +39,7 @@ class NewsData:
     items: list[NewsItem] = field(default_factory=list)
     update_time: str = ""
     source: str = ""
+    binary_data: bytes = None
 
     def __post_init__(self):
         """初始化后处理"""
@@ -56,6 +57,7 @@ class NewsData:
             "items": [item.to_dict() for item in self.items],
             "update_time": self.update_time,
             "source": self.source,
+            "has_binary_data": self.binary_data is not None,
         }
 
 

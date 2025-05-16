@@ -28,6 +28,12 @@ class ITHomeNewsSource(BaseNewsSource):
         try:
             from nonebot import logger
 
+            if hasattr(news_data, "binary_data") and news_data.binary_data is not None:
+                logger.debug("检测到二进制图片数据，直接使用API返回的图片")
+                return Message(MessageSegment.image(news_data.binary_data))
+
+            logger.debug("未检测到二进制图片数据，将文本渲染为图片")
+
             if len(news_data.items) > 15:
                 logger.info(
                     f"IT之家日报条目过多，限制为15条 (原有{len(news_data.items)}条)"
@@ -77,6 +83,7 @@ class ITHomeNewsSource(BaseNewsSource):
                         },
                     )
 
+            logger.debug(f"成功渲染IT之家日报图片，大小: {len(pic)} 字节")
             return Message(MessageSegment.image(pic))
         except Exception as e:
             from nonebot import logger

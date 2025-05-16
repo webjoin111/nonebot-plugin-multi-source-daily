@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from nonebot import logger, get_plugin_config
-from nonebot.adapters.onebot.v11 import Message
+from nonebot.adapters.onebot.v11 import Message, MessageSegment
 
 from ...config import Config
 from ...exceptions import (
@@ -74,6 +74,23 @@ class BaseNewsSource(ABC):
 
         try:
             news_data = await self.fetch_data()
+
+            if (
+                format_type == "image"
+                and hasattr(news_data, "binary_data")
+                and news_data.binary_data
+                and len(news_data.binary_data) > 0
+            ):
+                logger.debug("检测到二进制图片数据，直接使用")
+                message = Message(MessageSegment.image(news_data.binary_data))
+
+                identifier = f"#daily_type:{self.name}"
+                message.append(identifier)
+                logger.debug(f"已为{self.name}日报添加标识符: {identifier}")
+
+                news_cache.set(self.name, format_type, message)
+
+                return message
 
             if (
                 not news_data

@@ -27,6 +27,12 @@ class ZhihuNewsSource(BaseNewsSource):
         """生成图片格式的消息"""
         from nonebot import logger
 
+        if hasattr(news_data, "binary_data") and news_data.binary_data is not None:
+            logger.debug("检测到二进制图片数据，直接使用API返回的图片")
+            return Message(MessageSegment.image(news_data.binary_data))
+
+        logger.debug("未检测到二进制图片数据，将文本渲染为图片")
+
         if len(news_data.items) > 15:
             logger.info(f"知乎日报条目过多，限制为15条 (原有{len(news_data.items)}条)")
             news_data.items = news_data.items[:15]
@@ -46,6 +52,7 @@ class ZhihuNewsSource(BaseNewsSource):
             },
         )
 
+        logger.debug(f"成功渲染知乎日报图片，大小: {len(pic)} 字节")
         return Message(MessageSegment.image(pic))
 
     async def generate_text(self, news_data: NewsData) -> Message:

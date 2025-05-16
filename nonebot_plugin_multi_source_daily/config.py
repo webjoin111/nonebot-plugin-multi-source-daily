@@ -16,11 +16,8 @@ class Config(BaseModel):
     daily_news_60s_apis: list[ApiSource] = Field(
         default_factory=lambda: [
             ApiSource(
-                url="https://api.03c3.cn/api/zb", priority=1, parser="binary_image"
-            ),
-            ApiSource(
                 url="https://api.southerly.top/api/60s",
-                priority=2,
+                priority=1,
                 parser="binary_image",
             ),
         ]

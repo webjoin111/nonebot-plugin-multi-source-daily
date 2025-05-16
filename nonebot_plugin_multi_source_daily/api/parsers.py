@@ -187,40 +187,138 @@ class RssParser(ApiParser):
 
 
 class BinaryImageParser(ApiParser):
-    """二进制图片解析器"""
+    """二进制图片或JSON解析器"""
 
     async def parse(self, response: httpx.Response) -> NewsData:
         """解析API响应"""
         try:
             content_type = response.headers.get("Content-Type", "")
-            if not content_type.startswith("image/"):
+
+            if content_type.startswith("application/json"):
+                logger.debug("检测到JSON格式响应，尝试解析")
+                try:
+                    data = response.json()
+
+                    news_data = NewsData(
+                        title="60秒日报",
+                        update_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        source=response.url.host,
+                    )
+
+                    if isinstance(data, dict):
+                        if "data" in data and isinstance(data["data"], list):
+                            items = data["data"]
+                            for i, item in enumerate(items, 1):
+                                if isinstance(item, dict):
+                                    title = item.get("title", "")
+                                    description = item.get(
+                                        "desc", item.get("description", "")
+                                    )
+                                    if title:
+                                        news_data.add_item(
+                                            NewsItem(
+                                                title=title,
+                                                description=description,
+                                                index=i,
+                                            )
+                                        )
+                        elif "news" in data and isinstance(data["news"], list):
+                            items = data["news"]
+                            for i, item in enumerate(items, 1):
+                                if isinstance(item, dict):
+                                    title = item.get("title", "")
+                                    description = item.get(
+                                        "desc", item.get("description", "")
+                                    )
+                                    if title:
+                                        news_data.add_item(
+                                            NewsItem(
+                                                title=title,
+                                                description=description,
+                                                index=i,
+                                            )
+                                        )
+                        else:
+                            for i, (key, value) in enumerate(data.items(), 1):
+                                if (
+                                    isinstance(value, str)
+                                    and key != "date"
+                                    and key != "time"
+                                ):
+                                    news_data.add_item(
+                                        NewsItem(
+                                            title=value,
+                                            index=i,
+                                        )
+                                    )
+
+                    if not news_data.items:
+                        logger.warning(f"JSON解析后没有有效数据: {data}")
+                        raise APIResponseParseException(
+                            message="JSON解析后没有有效数据",
+                            parser="binary_image",
+                        )
+
+                    return news_data
+                except Exception as json_e:
+                    logger.error(f"JSON解析失败: {json_e}")
+                    raise APIResponseParseException(
+                        message=f"JSON解析失败: {json_e}",
+                        parser="binary_image",
+                    )
+
+            elif content_type.startswith("image/"):
+                logger.debug(f"检测到图片格式响应，Content-Type: {content_type}")
+
+                if not response.content or len(response.content) == 0:
+                    logger.error("图片响应内容为空")
+                    raise APIResponseParseException(
+                        message="图片响应内容为空",
+                        parser="binary_image",
+                    )
+
+                news_data = NewsData(
+                    title="每日60秒",
+                    update_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    source=response.url.host,
+                )
+
+                news_data.add_item(
+                    NewsItem(
+                        title="每日60秒读懂世界",
+                        url=str(response.url),
+                        index=1,
+                        image_url=str(response.url),
+                    )
+                )
+
+                try:
+                    news_data.binary_data = response.content
+                    logger.debug(
+                        f"成功获取图片数据，大小: {len(response.content)} 字节"
+                    )
+
+                    if len(response.content) < 100:
+                        logger.warning(
+                            f"图片数据可能无效，大小仅为 {len(response.content)} 字节"
+                        )
+                except Exception as e:
+                    logger.error(f"处理图片数据时出错: {e}")
+                    raise APIResponseParseException(
+                        message=f"处理图片数据时出错: {e}",
+                        parser="binary_image",
+                    )
+
+                return news_data
+            else:
                 raise APIResponseParseException(
-                    message=f"响应不是图片，Content-Type: {content_type}",
+                    message=f"响应格式不支持，Content-Type: {content_type}",
                     parser="binary_image",
                 )
-
-            news_data = NewsData(
-                title="图片日报",
-                update_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                source=response.url.host,
-            )
-
-            news_data.add_item(
-                NewsItem(
-                    title="图片日报",
-                    url=str(response.url),
-                    index=1,
-                    image_url=str(response.url),
-                )
-            )
-
-            news_data.binary_data = response.content
-
-            return news_data
         except Exception as e:
-            logger.error(f"二进制图片解析器解析失败: {e}")
+            logger.error(f"二进制图片/JSON解析器解析失败: {e}")
             raise APIResponseParseException(
-                message=f"二进制图片解析器解析失败: {e}",
+                message=f"二进制图片/JSON解析器解析失败: {e}",
                 parser="binary_image",
             )
 

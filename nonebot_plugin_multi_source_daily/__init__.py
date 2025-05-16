@@ -2,12 +2,8 @@ from nonebot import get_driver, require, get_plugin_config
 from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
 
-require("nonebot_plugin_alconna")
-require("nonebot_plugin_apscheduler")
-require("nonebot_plugin_htmlrender")
-require("nonebot_plugin_localstore")
 
-from .config import config, Config, update_config_from_global
+from .config import Config, update_config_from_global
 from .api import (
     api_manager,
     init_api_sources,
@@ -27,6 +23,10 @@ from .utils import (
     store,
 )
 
+require("nonebot_plugin_alconna")
+require("nonebot_plugin_apscheduler")
+require("nonebot_plugin_htmlrender")
+require("nonebot_plugin_localstore")
 __plugin_meta__ = PluginMetadata(
     name="多源日报",
     description="获取各种日报信息，支持定时发送和多API源",
@@ -70,12 +70,6 @@ __plugin_meta__ = PluginMetadata(
         "  日报API [-t]\n"
         "    - 查看所有日报API源及其状态\n"
         "    - -t 使用文本方式显示，默认为图片\n\n"
-        "  日报API 启用 [类型] [序号]\n"
-        "    - 启用指定的日报API源\n"
-        "    - 例如: 日报API 启用 知乎 2\n\n"
-        "  日报API 禁用 [类型] [序号]\n"
-        "    - 禁用指定的日报API源\n"
-        "    - 例如: 日报API 禁用 知乎 2\n\n"
         "  日报API 重置 [类型]\n"
         "    - 重置指定日报类型的API源状态\n"
         "    - 类型可以是: 60s, 知乎, moyu, ithome, 历史上的今天, all\n"
