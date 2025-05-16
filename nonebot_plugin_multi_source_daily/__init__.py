@@ -129,8 +129,13 @@ async def startup():
             f"已更新所有日报源的默认格式，全局默认格式: {latest_config.daily_news_default_format}"
         )
 
-        count = api_manager.reset_all_api_sources()
-        logger.info(f"已重置所有API源状态，共 {count} 个")
+        # 尝试加载保存的API源状态
+        if api_manager.load_status():
+            logger.info("已加载保存的API源状态")
+        else:
+            # 如果加载失败，则重置所有API源状态
+            count = api_manager.reset_all_api_sources()
+            logger.info(f"未找到保存的API源状态，已重置所有API源状态，共 {count} 个")
 
         await schedule_manager.init_jobs()
         logger.info("已初始化定时任务")

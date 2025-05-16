@@ -1,7 +1,9 @@
+import json
 import time
+from pathlib import Path
 from typing import Any
 
-from nonebot import logger
+from nonebot import logger, require
 
 from ..config import config
 from ..exceptions import (
@@ -13,6 +15,9 @@ from ..models import ApiSource, NewsData
 from ..utils import fetch_with_retry
 from .parsers import get_parser
 
+require("nonebot_plugin_localstore")
+import nonebot_plugin_localstore as store
+
 
 class ApiManager:
     """API管理器"""
@@ -21,6 +26,82 @@ class ApiManager:
         """初始化API管理器"""
         self.api_sources: dict[str, list[ApiSource]] = {}
         self.api_status: dict[str, dict[str, Any]] = {}
+        self.status_file = self._get_status_file()
+
+    def _get_status_file(self) -> Path:
+        """获取状态文件路径"""
+        try:
+            config_dir = store.get_plugin_config_dir()
+        except (AttributeError, Exception):
+            try:
+                config_dir = store.get_config_dir("nonebot_plugin_multi_source_daily")
+            except (AttributeError, Exception):
+                config_dir = Path.home() / ".nonebot" / "nonebot_plugin_multi_source_daily" / "config"
+                config_dir.mkdir(parents=True, exist_ok=True)
+
+        return config_dir / "api_status.json"
+
+    def save_status(self) -> bool:
+        """保存API源状态到文件"""
+        try:
+            status_data = {}
+            for news_type, sources in self.api_sources.items():
+                status_data[news_type] = []
+                for source in sources:
+                    status_data[news_type].append({
+                        "url": source.url,
+                        "enabled": source.enabled,
+                        "last_success": source.last_success,
+                        "failure_count": source.failure_count,
+                        "priority": source.priority,
+                        "parser": source.parser,
+                    })
+
+            self.status_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.status_file, "w", encoding="utf-8") as f:
+                json.dump(status_data, f, ensure_ascii=False, indent=2)
+
+            logger.debug(f"已保存API源状态到: {self.status_file}")
+            return True
+        except Exception as e:
+            logger.error(f"保存API源状态失败: {e}")
+            return False
+
+    def load_status(self) -> bool:
+        """从文件加载API源状态"""
+        if not self.status_file.exists():
+            logger.debug("API源状态文件不存在，跳过加载")
+            return False
+
+        try:
+            with open(self.status_file, "r", encoding="utf-8") as f:
+                status_data = json.load(f)
+
+            for news_type, sources_data in status_data.items():
+                if news_type not in self.api_sources:
+                    logger.warning(f"未知的日报类型: {news_type}，跳过加载")
+                    continue
+
+                for source_data in sources_data:
+                    url = source_data.get("url")
+                    if not url:
+                        continue
+
+                    source = self.get_api_source(news_type, url)
+                    if not source:
+                        logger.warning(f"未找到API源: {url}，跳过加载")
+                        continue
+
+                    # 只更新enabled状态，其他状态保持不变
+                    if "enabled" in source_data:
+                        source.enabled = source_data["enabled"]
+                        logger.debug(f"已加载API源 {url} 的启用状态: {source.enabled}")
+
+            logger.info(f"已从 {self.status_file} 加载API源状态")
+            return True
+        except Exception as e:
+            logger.error(f"加载API源状态失败: {e}")
+            return False
 
     def register_api_source(self, news_type: str, api_source: ApiSource) -> None:
         """注册API源"""
@@ -72,6 +153,8 @@ class ApiManager:
             source.enabled = True
             if news_type in self.api_status and url in self.api_status[news_type]:
                 self.api_status[news_type][url]["enabled"] = True
+            # 保存状态
+            self.save_status()
             return True
         return False
 
@@ -82,6 +165,8 @@ class ApiManager:
             source.enabled = False
             if news_type in self.api_status and url in self.api_status[news_type]:
                 self.api_status[news_type][url]["enabled"] = False
+            # 保存状态
+            self.save_status()
             return True
         return False
 
@@ -108,6 +193,11 @@ class ApiManager:
         for source in self.get_api_sources(news_type):
             if self.reset_api_source(news_type, source.url):
                 count += 1
+
+        # 保存状态
+        if count > 0:
+            self.save_status()
+
         return count
 
     def reset_all_api_sources(self) -> int:
@@ -115,6 +205,8 @@ class ApiManager:
         count = 0
         for news_type in self.api_sources:
             count += self.reset_api_sources(news_type)
+
+        # 保存状态已在reset_api_sources中处理
         return count
 
     def update_api_source_status(self, news_type: str, url: str, success: bool) -> None:
@@ -123,6 +215,8 @@ class ApiManager:
         if not source:
             return
 
+        status_changed = False
+
         if success:
             source.last_success = time.time()
             source.failure_count = 0
@@ -130,8 +224,10 @@ class ApiManager:
             source.failure_count += 1
 
             if source.failure_count >= config.daily_news_max_retries * 2:
-                source.enabled = False
-                logger.warning(f"API源 {url} 失败次数过多，已自动禁用")
+                if source.enabled:  # 只有当状态从启用变为禁用时才记录
+                    source.enabled = False
+                    status_changed = True
+                    logger.warning(f"API源 {url} 失败次数过多，已自动禁用")
 
         if news_type in self.api_status and url in self.api_status[news_type]:
             self.api_status[news_type][url] = {
@@ -139,6 +235,10 @@ class ApiManager:
                 "last_success": source.last_success,
                 "failure_count": source.failure_count,
             }
+
+        # 如果状态发生变化，保存状态
+        if status_changed:
+            self.save_status()
 
     def get_best_api_source(self, news_type: str) -> ApiSource | None:
         """获取最佳API源"""
