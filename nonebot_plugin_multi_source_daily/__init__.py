@@ -20,7 +20,8 @@ from .commands.news_detail import news_detail, quote_detail
 from .utils import (
     news_cache,
     schedule_manager,
-    store,
+    schedule_store,
+    api_status_store,
 )
 
 require("nonebot_plugin_alconna")
@@ -85,6 +86,7 @@ __plugin_meta__ = PluginMetadata(
 )
 
 __all__ = [
+    "api_status_store",
     "daily_news",
     "daily_news_api",
     "daily_news_cache",
@@ -94,7 +96,7 @@ __all__ = [
     "news_detail",
     "news_sources",
     "quote_detail",
-    "store",
+    "schedule_store",
 ]
 
 driver = get_driver()

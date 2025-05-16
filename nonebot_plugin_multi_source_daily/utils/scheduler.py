@@ -1,5 +1,3 @@
-from datetime import datetime
-import json
 from typing import Any
 
 from nonebot import get_bot, logger, require
@@ -7,17 +5,16 @@ from nonebot import get_bot, logger, require
 require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
 
-
 from ..exceptions import InvalidTimeFormatException, ScheduleException
 from .helpers import format_time, validate_time
+from .storage import schedule_store
 
 
 class ScheduleManager:
     """定时任务管理器"""
 
-    def __init__(self, store_instance=None):
+    def __init__(self):
         """初始化定时任务管理器"""
-        self.store = store_instance
 
     async def add_job(
         self,
@@ -54,13 +51,12 @@ class ScheduleManager:
                 misfire_grace_time=60,
             )
 
-            if self.store:
-                self.store.set_group_schedule(
-                    group_id=group_id,
-                    news_type=news_type,
-                    schedule_time=format_time(hour, minute),
-                    format_type=format_type,
-                )
+            schedule_store.set_group_schedule(
+                group_id=group_id,
+                news_type=news_type,
+                schedule_time=format_time(hour, minute),
+                format_type=format_type,
+            )
 
             logger.debug(
                 f"已为群 {group_id} 设置 {news_type} 日报定时任务，"
@@ -88,8 +84,7 @@ class ScheduleManager:
             except Exception as e:
                 logger.debug(f"移除任务时出现异常(可能任务不存在): {e}")
 
-            if self.store:
-                self.store.remove_group_schedule(group_id, news_type)
+            schedule_store.remove_group_schedule(group_id, news_type)
 
             return True
         except Exception as e:
@@ -191,11 +186,7 @@ class ScheduleManager:
     async def init_jobs(self) -> bool:
         """初始化所有定时任务"""
         try:
-            if not self.store:
-                logger.warning("未提供存储实例，无法初始化定时任务")
-                return False
-
-            schedules = self.store.get_all_schedules()
+            schedules = schedule_store.get_all_schedules()
 
             for group_id, group_schedules in schedules.items():
                 for news_type, schedule in group_schedules.items():
@@ -251,155 +242,4 @@ class ScheduleManager:
         return count
 
 
-class Store:
-    """存储定时任务信息的类"""
-
-    def __init__(self):
-        """初始化存储"""
-        from nonebot import require
-
-        require("nonebot_plugin_localstore")
-        import nonebot_plugin_localstore as localstore
-
-        try:
-            config_dir = localstore.get_plugin_config_dir()
-        except (AttributeError, Exception):
-            try:
-                config_dir = localstore.get_config_dir(
-                    "nonebot_plugin_multi_source_daily"
-                )
-            except (AttributeError, Exception):
-                from pathlib import Path
-
-                config_dir = (
-                    Path.home()
-                    / ".nonebot"
-                    / "nonebot_plugin_multi_source_daily"
-                    / "config"
-                )
-                config_dir.mkdir(parents=True, exist_ok=True)
-
-        self.config_file = config_dir / "schedules.json"
-        self.data = self._load_data()
-
-    def _load_data(self) -> dict[str, dict[str, dict[str, Any]]]:
-        """加载数据"""
-        self.config_file.parent.mkdir(parents=True, exist_ok=True)
-
-        if not self.config_file.exists():
-            with open(self.config_file, "w", encoding="utf-8") as f:
-                json.dump({}, f, ensure_ascii=False, indent=2)
-            return {}
-
-        try:
-            with open(self.config_file, encoding="utf-8") as f:
-                data = json.load(f)
-
-            if not isinstance(data, dict):
-                logger.error("定时任务数据格式错误，重置为空数据")
-                return {}
-
-            cleaned_data = {}
-            for group_id, group_schedules in data.items():
-                if not isinstance(group_schedules, dict):
-                    continue
-
-                cleaned_group = {}
-                for news_type, schedule in group_schedules.items():
-                    if (
-                        not isinstance(schedule, dict)
-                        or "schedule_time" not in schedule
-                    ):
-                        continue
-                    cleaned_group[news_type] = schedule
-
-                if cleaned_group:
-                    cleaned_data[group_id] = cleaned_group
-
-            return cleaned_data
-        except json.JSONDecodeError:
-            logger.error("定时任务数据文件损坏，创建新的空数据文件")
-            backup_file = self.config_file.with_name(
-                f"schedules.json.bak.{int(datetime.now().timestamp())}"
-            )
-            try:
-                import shutil
-
-                shutil.copy2(self.config_file, backup_file)
-                logger.info(f"已将损坏的数据文件备份为: {backup_file}")
-            except Exception as e:
-                logger.error(f"备份损坏数据文件失败: {e}")
-
-            with open(self.config_file, "w", encoding="utf-8") as f:
-                json.dump({}, f, ensure_ascii=False, indent=2)
-            return {}
-        except Exception as e:
-            logger.error(f"加载定时任务数据失败: {e}")
-            return {}
-
-    def _save_data(self) -> bool:
-        """保存数据"""
-        try:
-            self.config_file.parent.mkdir(parents=True, exist_ok=True)
-
-            with open(self.config_file, "w", encoding="utf-8") as f:
-                json.dump(self.data, f, ensure_ascii=False, indent=2)
-            return True
-        except Exception as e:
-            logger.error(f"保存定时任务数据失败: {e}")
-            return False
-
-    def get_group_schedule(
-        self, group_id: int, news_type: str
-    ) -> dict[str, Any] | None:
-        """获取群组的定时任务配置"""
-        group_id_str = str(group_id)
-        if group_id_str in self.data and news_type in self.data[group_id_str]:
-            return self.data[group_id_str][news_type]
-        return None
-
-    def get_group_schedules(self, group_id: int) -> dict[str, dict[str, Any]]:
-        """获取群组的所有定时任务配置"""
-        group_id_str = str(group_id)
-        return self.data.get(group_id_str, {})
-
-    def get_all_schedules(self) -> dict[str, dict[str, dict[str, Any]]]:
-        """获取所有群组的定时任务配置"""
-        return self.data
-
-    def get_all_groups_by_news_type(self, news_type: str) -> list[str]:
-        """获取订阅了指定日报类型的所有群组"""
-        groups = []
-        for group_id, group_schedules in self.data.items():
-            if news_type in group_schedules:
-                groups.append(group_id)
-        return groups
-
-    def set_group_schedule(
-        self, group_id: int, news_type: str, schedule_time: str, format_type: str
-    ) -> bool:
-        """设置群组的定时任务配置"""
-        group_id_str = str(group_id)
-        if group_id_str not in self.data:
-            self.data[group_id_str] = {}
-
-        self.data[group_id_str][news_type] = {
-            "schedule_time": schedule_time,
-            "format_type": format_type,
-        }
-        return self._save_data()
-
-    def remove_group_schedule(self, group_id: int, news_type: str) -> bool:
-        """移除群组的特定日报类型的定时任务配置"""
-        group_id_str = str(group_id)
-        if group_id_str in self.data and news_type in self.data[group_id_str]:
-            del self.data[group_id_str][news_type]
-            if not self.data[group_id_str]:
-                del self.data[group_id_str]
-            return self._save_data()
-        return False
-
-
-store = Store()
-
-schedule_manager = ScheduleManager(store)
+schedule_manager = ScheduleManager()
