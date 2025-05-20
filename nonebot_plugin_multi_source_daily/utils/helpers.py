@@ -4,7 +4,11 @@ from typing import Any
 
 import httpx
 from nonebot import logger
-from nonebot_plugin_htmlrender import template_to_pic
+
+from .. import HAS_HTMLRENDER
+
+if HAS_HTMLRENDER:
+    from nonebot_plugin_htmlrender import template_to_pic
 
 from ..config import config
 from ..exceptions import (
@@ -142,15 +146,19 @@ async def render_news_to_image(
     template_name: str,
     title: str,
     template_data: dict[str, Any] = None,
-) -> bytes:
+) -> bytes | None:
     """渲染新闻数据为图片"""
     if hasattr(news_data, "binary_data") and news_data.binary_data is not None:
-        from nonebot import logger
-        logger.debug(f"检测到二进制图片数据，大小: {len(news_data.binary_data)} 字节，直接使用")
+        logger.debug(
+            f"检测到二进制图片数据，大小: {len(news_data.binary_data)} 字节，直接使用"
+        )
         return news_data.binary_data
 
-    template_path = config.get_template_dir()
+    if not HAS_HTMLRENDER:
+        logger.warning("htmlrender插件不可用，无法渲染图片，将尝试使用文本模式")
+        return None
 
+    template_path = config.get_template_dir()
     template_path.mkdir(parents=True, exist_ok=True)
 
     data = {
@@ -187,7 +195,7 @@ async def render_news_to_image(
             return pic
         except Exception as e2:
             logger.error(f"使用旧版参数渲染模板也失败: {e2}")
-            raise
+            return None
 
 
 def generate_news_type_error(invalid_type: str, news_sources: dict[str, Any]) -> str:

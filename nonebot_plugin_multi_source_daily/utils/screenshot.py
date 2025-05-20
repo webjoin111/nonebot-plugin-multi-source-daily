@@ -1,9 +1,11 @@
 from io import BytesIO
 
-from nonebot import logger, require
+from nonebot import logger
 
-require("nonebot_plugin_htmlrender")
-from nonebot_plugin_htmlrender import get_new_page
+from .. import HAS_HTMLRENDER
+
+if HAS_HTMLRENDER:
+    from nonebot_plugin_htmlrender import get_new_page
 
 try:
     from PIL import Image
@@ -277,6 +279,10 @@ async def capture_webpage_screenshot(
     timeout: int = 30000,
 ) -> bytes | None:
     """获取网页截图"""
+    if not HAS_HTMLRENDER:
+        logger.warning("htmlrender插件不可用，无法获取网页截图")
+        return None
+
     try:
         if site_type and site_type.lower() in SITE_SELECTORS:
             selector = selector or SITE_SELECTORS[site_type.lower()]

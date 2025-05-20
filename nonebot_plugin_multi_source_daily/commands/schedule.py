@@ -1,7 +1,7 @@
 import datetime
 from pathlib import Path
 
-from nonebot import logger, require
+from nonebot import logger
 from nonebot.adapters.onebot.v11 import (
     Bot,
     GroupMessageEvent,
@@ -10,7 +10,8 @@ from nonebot.adapters.onebot.v11 import (
 )
 from nonebot.permission import SUPERUSER
 
-require("nonebot_plugin_alconna")
+from .. import HAS_HTMLRENDER
+
 from nonebot_plugin_alconna import (
     Alconna,
     AlconnaMatcher,
@@ -22,8 +23,8 @@ from nonebot_plugin_alconna import (
     on_alconna,
 )
 
-require("nonebot_plugin_htmlrender")
-from nonebot_plugin_htmlrender import md_to_pic
+if HAS_HTMLRENDER:
+    from nonebot_plugin_htmlrender import md_to_pic
 
 from ..api import get_news_source, news_sources
 from ..exceptions import (
@@ -417,8 +418,16 @@ async def handle_daily_news_view(
                             md_text += f"- **下次推送**: {job['next_run']}\n"
                             md_text += f"- **格式**: {job['format_type']}\n\n"
 
-                pic = await md_to_pic(md=md_text, css_path=CUSTOM_CSS_PATH)
-                await matcher.send(MessageSegment.image(pic))
+                if HAS_HTMLRENDER:
+                    try:
+                        pic = await md_to_pic(md=md_text, css_path=CUSTOM_CSS_PATH)
+                        await matcher.send(MessageSegment.image(pic))
+                    except Exception as e:
+                        logger.error(f"生成订阅情况图片失败: {e}，将使用文本模式")
+                        await handle_daily_news_view(bot, event, matcher, res)
+                else:
+                    logger.warning("htmlrender插件不可用，将使用文本模式显示订阅情况")
+                    await handle_daily_news_view(bot, event, matcher, res)
 
             return
 
@@ -502,8 +511,16 @@ async def handle_daily_news_view(
                         md_text += f"- **下次推送**: {job['next_run']}\n"
                         md_text += f"- **格式**: {job['format_type']}\n\n"
 
-                pic = await md_to_pic(md=md_text, css_path=CUSTOM_CSS_PATH)
-                await matcher.send(MessageSegment.image(pic))
+                if HAS_HTMLRENDER:
+                    try:
+                        pic = await md_to_pic(md=md_text, css_path=CUSTOM_CSS_PATH)
+                        await matcher.send(MessageSegment.image(pic))
+                    except Exception as e:
+                        logger.error(f"生成订阅情况图片失败: {e}，将使用文本模式")
+                        await handle_daily_news_view(bot, event, matcher, res)
+                else:
+                    logger.warning("htmlrender插件不可用，将使用文本模式显示订阅情况")
+                    await handle_daily_news_view(bot, event, matcher, res)
 
             return
 

@@ -1,10 +1,11 @@
 """日报API管理命令模块"""
 
-from nonebot import require
+from nonebot import logger
 from nonebot.adapters.onebot.v11 import MessageSegment
 from nonebot.permission import SUPERUSER
 
-require("nonebot_plugin_alconna")
+from .. import HAS_HTMLRENDER
+
 from nonebot_plugin_alconna import (
     Alconna,
     AlconnaMatcher,
@@ -16,8 +17,8 @@ from nonebot_plugin_alconna import (
     on_alconna,
 )
 
-require("nonebot_plugin_htmlrender")
-from nonebot_plugin_htmlrender import md_to_pic
+if HAS_HTMLRENDER:
+    from nonebot_plugin_htmlrender import md_to_pic
 
 from ..api import api_manager
 from ..utils import get_current_time
@@ -101,7 +102,10 @@ async def handle_api_list(matcher: AlconnaMatcher, use_text: bool = False):
     """处理API源列表查看"""
     api_status = api_manager.get_api_status()
 
-    if use_text:
+    if use_text or not HAS_HTMLRENDER:
+        if not use_text and not HAS_HTMLRENDER:
+            logger.warning("htmlrender插件不可用，将使用文本模式显示API源状态")
+
         message = f"【日报API源状态】\n查询时间: {get_current_time()}\n\n"
 
         for news_type, status in api_status.items():
@@ -155,9 +159,12 @@ async def handle_api_list(matcher: AlconnaMatcher, use_text: bool = False):
 
                 md_text += f"- **失败次数**: {source['failure_count']}\n\n"
 
-        pic = await md_to_pic(md=md_text)
-
-        await matcher.send(MessageSegment.image(pic))
+        try:
+            pic = await md_to_pic(md=md_text)
+            await matcher.send(MessageSegment.image(pic))
+        except Exception as e:
+            logger.error(f"生成API源状态图片失败: {e}，将使用文本模式")
+            await handle_api_list(matcher, use_text=True)
 
 
 async def handle_api_toggle(

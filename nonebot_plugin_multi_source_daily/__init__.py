@@ -1,7 +1,32 @@
-from nonebot import get_driver, require, get_plugin_config
+from nonebot import get_driver, get_plugin_config
 from nonebot.log import logger
-from nonebot.plugin import PluginMetadata
+from nonebot.plugin import PluginMetadata, require
 
+try:
+    require("nonebot_plugin_alconna")
+except Exception as e:
+    logger.error(f"加载 nonebot_plugin_alconna 失败: {e}")
+    raise
+
+try:
+    require("nonebot_plugin_apscheduler")
+except Exception as e:
+    logger.error(f"加载 nonebot_plugin_apscheduler 失败: {e}")
+    raise
+
+try:
+    require("nonebot_plugin_localstore")
+except Exception as e:
+    logger.error(f"加载 nonebot_plugin_localstore 失败: {e}")
+    raise
+
+try:
+    require("nonebot_plugin_htmlrender")
+    HAS_HTMLRENDER = True
+    logger.info("成功加载 nonebot_plugin_htmlrender 插件")
+except Exception as e:
+    HAS_HTMLRENDER = False
+    logger.warning(f"加载 nonebot_plugin_htmlrender 失败: {e}，图片渲染功能将不可用")
 
 from .config import Config, update_config_from_global
 from .api import (
@@ -24,10 +49,6 @@ from .utils import (
     api_status_store,
 )
 
-require("nonebot_plugin_alconna")
-require("nonebot_plugin_apscheduler")
-require("nonebot_plugin_htmlrender")
-require("nonebot_plugin_localstore")
 __plugin_meta__ = PluginMetadata(
     name="多源日报",
     description="获取各种日报信息，支持定时发送和多API源",
@@ -131,11 +152,9 @@ async def startup():
             f"已更新所有日报源的默认格式，全局默认格式: {latest_config.daily_news_default_format}"
         )
 
-        # 尝试加载保存的API源状态
         if api_manager.load_status():
             logger.info("已加载保存的API源状态")
         else:
-            # 如果加载失败，则重置所有API源状态
             count = api_manager.reset_all_api_sources()
             logger.info(f"未找到保存的API源状态，已重置所有API源状态，共 {count} 个")
 
