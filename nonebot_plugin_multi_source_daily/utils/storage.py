@@ -135,6 +135,21 @@ class ScheduleStorage(BaseStorage[Dict[str, Dict[str, Dict[str, Any]]]]):
         """获取所有定时任务配置"""
         return self.data
 
+    def get_group_schedule(self, group_id: int, news_type: str) -> Dict[str, Any] | None:
+        """获取群组的特定日报类型的定时任务配置"""
+        group_id_str = str(group_id)
+        if group_id_str in self.data and news_type in self.data[group_id_str]:
+            return self.data[group_id_str][news_type]
+        return None
+
+    def get_all_groups_by_news_type(self, news_type: str) -> list[str]:
+        """获取订阅了特定日报类型的所有群组ID"""
+        groups = []
+        for group_id, schedules in self.data.items():
+            if news_type in schedules:
+                groups.append(group_id)
+        return groups
+
 
 class ApiStatusStorage(BaseStorage[Dict[str, Any]]):
     """API状态存储类"""

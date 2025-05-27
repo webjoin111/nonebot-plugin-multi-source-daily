@@ -122,8 +122,8 @@ class ScheduleManager:
             )
 
             schedule_config = None
-            if self.store:
-                schedule_config = self.store.get_group_schedule(
+            if schedule_store:
+                schedule_config = schedule_store.get_group_schedule(
                     job_group_id, job_news_type
                 )
 

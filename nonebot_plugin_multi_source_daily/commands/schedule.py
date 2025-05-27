@@ -235,10 +235,10 @@ async def handle_daily_news_remove(
 
     try:
         if all_groups:
-            from ..utils.scheduler import store
+            from ..utils.storage import schedule_store
 
             removed_count = 0
-            groups = store.get_all_groups_by_news_type(news_type)
+            groups = schedule_store.get_all_groups_by_news_type(news_type)
             for group_id in groups:
                 try:
                     await schedule_manager.remove_job(int(group_id), news_type)
@@ -306,9 +306,9 @@ async def handle_daily_news_view(
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         if all_groups:
-            from ..utils.scheduler import store
+            from ..utils.storage import schedule_store
 
-            all_schedules = store.get_all_schedules()
+            all_schedules = schedule_store.get_all_schedules()
             if not all_schedules:
                 await matcher.send("当前没有任何群组订阅日报")
                 return
@@ -432,9 +432,9 @@ async def handle_daily_news_view(
             return
 
         if target_group:
-            from ..utils.scheduler import store
+            from ..utils.storage import schedule_store
 
-            schedules = store.get_group_schedules(target_group)
+            schedules = schedule_store.get_group_schedules(target_group)
 
             try:
                 group_info = await bot.get_group_info(group_id=target_group)
@@ -526,9 +526,9 @@ async def handle_daily_news_view(
 
         if isinstance(event, GroupMessageEvent):
             group_id = event.group_id
-            from ..utils.scheduler import store
+            from ..utils.storage import schedule_store
 
-            schedules = store.get_group_schedules(group_id)
+            schedules = schedule_store.get_group_schedules(group_id)
 
             try:
                 group_info = await bot.get_group_info(group_id=group_id)
@@ -651,7 +651,8 @@ async def handle_daily_news_fix(
     await matcher.send("正在修复日报系统，请稍候...")
 
     try:
-        from ..utils.scheduler import scheduler, store
+        from ..utils.storage import schedule_store
+        from nonebot_plugin_apscheduler import scheduler
 
         for job in scheduler.get_jobs():
             if job.id.startswith("daily_news_"):
@@ -661,8 +662,8 @@ async def handle_daily_news_fix(
                     logger.debug(f"移除任务失败: {e}")
 
         if reset_all:
-            store.data = {}
-            store._save_data()
+            schedule_store.data = {}
+            schedule_store._save_data()
             await matcher.send("已重置所有定时任务配置")
         else:
             await schedule_manager.init_jobs()
