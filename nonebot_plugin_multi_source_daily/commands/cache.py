@@ -67,6 +67,8 @@ async def handle_daily_news_cache(
 
             for item in filtered_details:
                 message += f"格式: {item['format']}\n"
+                if 'api_source' in item:
+                    message += f"API源: {item['api_source']}\n"
                 message += f"创建时间: {item['created_at']}\n"
                 message += f"过期时间: {item['expires_in']}秒后\n\n"
 
@@ -85,8 +87,10 @@ async def handle_daily_news_cache(
 
                 message += "\n详细缓存信息:\n"
                 for item in detailed["details"]:
-                    message += f"- {item['type']} ({item['format']}): "
-                    message += f"将在 {item['expires_in']}秒后过期\n"
+                    message += f"- {item['type']} ({item['format']}"
+                    if 'api_source' in item:
+                        message += f", {item['api_source']}"
+                    message += f"): 将在 {item['expires_in']}秒后过期\n"
 
             await matcher.send(message.strip())
         return

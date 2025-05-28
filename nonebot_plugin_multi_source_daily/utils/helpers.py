@@ -174,6 +174,8 @@ async def render_news_to_image(
     viewport = {"width": 800, "height": 600}
     if template_name == "ithome.html":
         viewport = {"width": 600, "height": 1000}
+    elif template_name == "sixty_seconds.html":
+        viewport = {"width": 520, "height": 600}
 
     try:
         pic = await template_to_pic(

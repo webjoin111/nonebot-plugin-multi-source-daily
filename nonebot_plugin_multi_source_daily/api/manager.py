@@ -235,22 +235,37 @@ class ApiManager:
 
         return sources[0]
 
-    async def fetch_data(self, news_type: str, extra_params: dict = None) -> NewsData:
+    async def fetch_data(
+        self, news_type: str, extra_params: dict = None, api_index: int = None
+    ) -> NewsData:
         """获取数据
 
         Args:
             news_type: 日报类型
             extra_params: 额外的请求参数
+            api_index: 指定API源索引 (1-based)
         """
-        source = self.get_best_api_source(news_type)
-        if not source:
-            raise NoAvailableAPIException(news_type=news_type)
+        if api_index is not None:
+            sources = self.get_enabled_api_sources(news_type)
+            if not sources:
+                raise NoAvailableAPIException(news_type=news_type)
+
+            if api_index < 1 or api_index > len(sources):
+                raise ValueError(f"API源索引超出范围，可用范围: 1-{len(sources)}")
+
+            sources.sort(key=lambda x: x.priority)
+            source = sources[api_index - 1]
+            logger.debug(f"使用指定的API源 (索引 {api_index}): {source.url}")
+        else:
+            source = self.get_best_api_source(news_type)
+            if not source:
+                raise NoAvailableAPIException(news_type=news_type)
 
         parser = get_parser(source.parser)
 
-        failover_enabled = config.daily_news_auto_failover
+        failover_enabled = config.daily_news_auto_failover and api_index is None
         logger.debug(
-            f"日报类型: {news_type}, 主API源: {source.url}, 故障转移已{'启用' if failover_enabled else '禁用'}"
+            f"日报类型: {news_type}, API源: {source.url}, 故障转移已{'启用' if failover_enabled else '禁用'}"
         )
 
         try:

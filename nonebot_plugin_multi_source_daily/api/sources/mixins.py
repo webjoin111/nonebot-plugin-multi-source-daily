@@ -182,6 +182,7 @@ class ConfigurableFormatMixin(ABC):
         api_manager,
         requested_format: str,
         global_default: str,
+        api_index: int = None,
     ) -> NewsData:
         """带格式回退的数据获取"""
         params = self.determine_api_format(requested_format, global_default)
@@ -190,7 +191,7 @@ class ConfigurableFormatMixin(ABC):
         if requested_format == "image" and global_default == "text":
             try:
                 json_params = {"format": "json"}
-                news_data = await api_manager.fetch_data(self.name, json_params)
+                news_data = await api_manager.fetch_data(self.name, json_params, api_index)
 
                 if (
                     news_data
@@ -206,7 +207,7 @@ class ConfigurableFormatMixin(ABC):
                 logger.warning(f"获取JSON数据失败，回退到请求图片: {e}")
                 params["format"] = "image"
 
-        return await api_manager.fetch_data(self.name, params)
+        return await api_manager.fetch_data(self.name, params, api_index)
 
 
 class ImageSizeOptimizationMixin(ABC):

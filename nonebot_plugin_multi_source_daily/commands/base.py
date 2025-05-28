@@ -26,10 +26,11 @@ daily_news = on_alconna(
         Args["news_type", str],
         Option("-f", Args["format_type", str]),
         Option("-f|--force", help_text="强制刷新，不使用缓存"),
+        Option("-a|--api", Args["api_index", int], help_text="指定API源索引"),
         meta=CommandMeta(
             compact=True,
             description="获取指定类型的日报",
-            usage="日报 [类型] [-f 格式] [--force]",
+            usage="日报 [类型] [-f 格式] [--force] [-a API索引]",
         ),
     ),
     priority=10,
@@ -76,8 +77,10 @@ async def handle_daily_news(
         return
 
     format_type = arp.all_matched_args.get("format_type")
+    api_index = arp.all_matched_args.get("api_index")
+
     logger.debug(
-        f"命令指定的格式: {format_type}，全局默认格式: {config.daily_news_default_format}，源默认格式: {source.default_format}"
+        f"命令指定的格式: {format_type}，全局默认格式: {config.daily_news_default_format}，源默认格式: {source.default_format}，API索引: {api_index}"
     )
 
     force_refresh = "-f" in arp.options or "--force" in arp.options
@@ -86,10 +89,12 @@ async def handle_daily_news(
 
     try:
         message = await source.fetch(
-            format_type=format_type, force_refresh=force_refresh
+            format_type=format_type, force_refresh=force_refresh, api_index=api_index
         )
 
         await matcher.send(message)
+    except ValueError as e:
+        await matcher.send(f"参数错误: {e}")
     except Exception as e:
         logger.error(f"获取{news_type}日报失败: {e}")
         await matcher.send(f"获取{news_type}日报失败: {e}")

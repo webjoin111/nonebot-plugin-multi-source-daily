@@ -54,7 +54,7 @@ class BaseNewsSource(ABC):
         return format_type
 
     async def fetch(
-        self, format_type: str = None, force_refresh: bool = False
+        self, format_type: str = None, force_refresh: bool = False, api_index: int = None
     ) -> Message:
         """获取日报内容"""
         self.update_default_format()
@@ -67,13 +67,16 @@ class BaseNewsSource(ABC):
         logger.debug(f"验证后的格式: {format_type}")
 
         if not force_refresh:
-            cached_data = news_cache.get(self.name, format_type)
+            cached_data = news_cache.get(self.name, format_type, api_index)
             if cached_data:
-                logger.debug(f"从缓存获取{self.name}日报，格式: {format_type}")
+                cache_info = f"格式: {format_type}"
+                if api_index is not None:
+                    cache_info += f", API源: {api_index}"
+                logger.debug(f"从缓存获取{self.name}日报，{cache_info}")
                 return cached_data
 
         try:
-            news_data = await self.fetch_data()
+            news_data = await self.fetch_data(api_index=api_index)
 
             if (
                 format_type == "image"
@@ -89,7 +92,7 @@ class BaseNewsSource(ABC):
                     message.append(display_name)
                     logger.debug(f"已为{self.name}日报添加显示名称: {display_name}")
 
-                news_cache.set(self.name, format_type, message)
+                news_cache.set(self.name, format_type, message, api_index=api_index)
 
                 return message
 
@@ -118,7 +121,7 @@ class BaseNewsSource(ABC):
                         message.append(display_name)
                         logger.debug(f"已为{self.name}日报添加显示名称: {display_name}")
 
-                news_cache.set(self.name, format_type, message)
+                news_cache.set(self.name, format_type, message, api_index=api_index)
 
             return message
         except Exception as e:
@@ -126,7 +129,7 @@ class BaseNewsSource(ABC):
             return Message(f"获取{self.name}日报失败: {e}")
 
     @abstractmethod
-    async def fetch_data(self) -> NewsData:
+    async def fetch_data(self, api_index: int = None) -> NewsData:
         """获取原始数据"""
         pass
 

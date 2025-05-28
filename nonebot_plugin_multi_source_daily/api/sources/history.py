@@ -24,9 +24,9 @@ class HistoryNewsSource(BaseNewsSource, ImageRenderMixin, TextFormatMixin, NewsI
             ],
         )
 
-    async def fetch_data(self) -> NewsData:
+    async def fetch_data(self, api_index: int = None) -> NewsData:
         """获取原始数据"""
-        return await api_manager.fetch_data(self.name)
+        return await api_manager.fetch_data(self.name, api_index=api_index)
 
     async def generate_image(self, news_data: NewsData) -> Message:
         """生成图片格式的消息"""

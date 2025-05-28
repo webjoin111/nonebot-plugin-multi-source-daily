@@ -16,13 +16,15 @@ class NewsCache:
         self.cache: dict[str, CacheItem] = {}
         self.default_expire_time = expire_time or config.daily_news_cache_expire
 
-    def get_cache_key(self, news_type: str, format_type: str) -> str:
+    def get_cache_key(self, news_type: str, format_type: str, api_index: int = None) -> str:
         """生成缓存键"""
+        if api_index is not None:
+            return f"{news_type}:{format_type}:api{api_index}"
         return f"{news_type}:{format_type}"
 
-    def get(self, news_type: str, format_type: str) -> Message | None:
+    def get(self, news_type: str, format_type: str, api_index: int = None) -> Message | None:
         """获取缓存"""
-        key = self.get_cache_key(news_type, format_type)
+        key = self.get_cache_key(news_type, format_type, api_index)
         if key in self.cache:
             cache_item = self.cache[key]
             if not cache_item.is_expired():
@@ -38,9 +40,10 @@ class NewsCache:
         format_type: str,
         data: Message,
         expire_time: int | None = None,
+        api_index: int = None,
     ) -> None:
         """设置缓存"""
-        key = self.get_cache_key(news_type, format_type)
+        key = self.get_cache_key(news_type, format_type, api_index)
         expire_seconds = expire_time or self.default_expire_time
         expire_timestamp = time.time() + expire_seconds
 
@@ -52,9 +55,9 @@ class NewsCache:
 
         logger.debug(f"已缓存 {key} 的数据，过期时间: {expire_seconds}秒")
 
-    def delete(self, news_type: str, format_type: str) -> bool:
+    def delete(self, news_type: str, format_type: str, api_index: int = None) -> bool:
         """删除指定缓存"""
-        key = self.get_cache_key(news_type, format_type)
+        key = self.get_cache_key(news_type, format_type, api_index)
         if key in self.cache:
             del self.cache[key]
             logger.debug(f"已删除缓存: {key}")
@@ -123,17 +126,24 @@ class NewsCache:
         details = []
 
         for key, item in self.cache.items():
-            news_type, format_type = key.split(":")
-            details.append(
-                {
-                    "type": news_type,
-                    "format": format_type,
-                    "created_at": time.strftime(
-                        "%Y-%m-%d %H:%M:%S", time.localtime(item.created_at)
-                    ),
-                    "expires_in": int(item.time_to_expire()),
-                }
-            )
+            parts = key.split(":")
+            news_type = parts[0]
+            format_type = parts[1]
+            api_info = parts[2] if len(parts) > 2 else None
+
+            detail_item = {
+                "type": news_type,
+                "format": format_type,
+                "created_at": time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(item.created_at)
+                ),
+                "expires_in": int(item.time_to_expire()),
+            }
+
+            if api_info:
+                detail_item["api_source"] = api_info
+
+            details.append(detail_item)
 
         return {
             "total": len(self.cache),
