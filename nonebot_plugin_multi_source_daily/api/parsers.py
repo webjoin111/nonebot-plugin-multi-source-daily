@@ -498,6 +498,47 @@ class ZhihuHotParser(ApiParser):
             )
 
 
+class WeiboHotParser(ApiParser):
+    """微博热搜解析器"""
+
+    async def parse(self, response: httpx.Response) -> NewsData:
+        """解析API响应"""
+        try:
+            data = response.json()
+
+            news_data = NewsData(
+                title="微博热搜",
+                update_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                source="微博",
+            )
+
+            if isinstance(data, dict) and "data" in data:
+                items = data["data"]
+                if isinstance(items, list):
+                    for i, item in enumerate(items, 1):
+                        if isinstance(item, dict):
+                            title = item.get("title", "")
+                            url = item.get("link", "")
+                            hot_value = item.get("hot_value", "")
+                            if title:
+                                news_data.add_item(
+                                    NewsItem(
+                                        title=title,
+                                        url=url,
+                                        index=i,
+                                        hot=hot_value,
+                                    )
+                                )
+
+            return news_data
+        except Exception as e:
+            logger.error(f"微博热搜解析器解析失败: {e}")
+            raise APIResponseParseException(
+                message=f"微博热搜解析器解析失败: {e}",
+                parser="weibo_hot",
+            )
+
+
 PARSERS: dict[str, type[ApiParser]] = {
     "default": DefaultParser,
     "vvhan": VVHanZhihuParser,
@@ -507,6 +548,7 @@ PARSERS: dict[str, type[ApiParser]] = {
     "viki_60s_json": Viki60sJsonParser,
     "history_today": HistoryTodayParser,
     "zhihu_hot": ZhihuHotParser,
+    "weibo_hot": WeiboHotParser,
 }
 
 

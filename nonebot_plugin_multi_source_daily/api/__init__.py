@@ -11,6 +11,7 @@ from .sources import (
     sixty_seconds_source,
     zhihu_source,
     zhihu_hot_source,
+    weibo_hot_source,
 )
 
 __all__ = [
@@ -29,4 +30,5 @@ __all__ = [
     "sixty_seconds_source",
     "zhihu_source",
     "zhihu_hot_source",
+    "weibo_hot_source",
 ]

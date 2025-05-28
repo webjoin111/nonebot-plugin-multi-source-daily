@@ -79,7 +79,7 @@ DAILY_NEWS_DEFAULT_FORMAT=image
 
 | 日报类型 | 说明 | 别名 | 支持格式 | 默认API源数量 |
 |---------|------|------|----------|--------------|
-| 60s | 每日60秒读懂世界 | 60秒、早报、每日60秒、60s日报、60秒日报 | 图片、文本 | 1 |
+| 60s | 每日60秒读懂世界 | 60秒、早报、每日60秒、60s日报、60秒日报 | 图片、文本 | 2 |
 | 知乎日报 | 知乎日报 | 知乎 | 图片、文本 | 1 |
 | moyu | 摸鱼日报 | 摸鱼 | 图片、文本 | 1 |
 | IT之家 | IT之家日报 | IT、ithome | 图片、文本 | 1 |
@@ -195,8 +195,8 @@ DAILY_NEWS_DEFAULT_FORMAT=image
 
 日报API 重置 [类型]
   - 重置指定日报类型的API源状态
-  - 类型可以是: 60s, 知乎日报, 知乎热榜, moyu, ithome, 历史上的今天, all
-  - 例如: 日报API 重置 知乎热榜
+  - 类型可以是: 60s, 知乎日报, 知乎热榜, 微博热搜, moyu, ithome, 历史上的今天, all
+  - 例如: 日报API 重置 微博热搜
 
 日报API 重置 -a
   - 重置所有API源状态
@@ -221,6 +221,11 @@ DAILY_NEWS_ZHIHU_APIS=[
 # 知乎热榜API源
 DAILY_NEWS_ZHIHU_HOT_APIS=[
     {"url": "https://60s-api.viki.moe/v2/zhihu", "priority": 1, "parser": "zhihu_hot"}
+]
+
+# 微博热搜API源
+DAILY_NEWS_WEIBO_HOT_APIS=[
+    {"url": "https://60s-api.viki.moe/v2/weibo", "priority": 1, "parser": "weibo_hot"}
 ]
 
 # 摸鱼日报API源
