@@ -84,9 +84,10 @@ class BaseNewsSource(ABC):
                 logger.debug("检测到二进制图片数据，直接使用")
                 message = Message(MessageSegment.image(news_data.binary_data))
 
-                identifier = f"#daily_type:{self.name}"
-                message.append(identifier)
-                logger.debug(f"已为{self.name}日报添加标识符: {identifier}")
+                if self._supports_detail():
+                    identifier = f"#daily_type:{self.name}"
+                    message.append(identifier)
+                    logger.debug(f"已为{self.name}日报添加标识符: {identifier}")
 
                 news_cache.set(self.name, format_type, message)
 
@@ -112,9 +113,10 @@ class BaseNewsSource(ABC):
 
             if message and len(message) > 0:
                 if format_type == "image" and message[0].type == "image":
-                    identifier = f"#daily_type:{self.name}"
-                    message.append(identifier)
-                    logger.debug(f"已为{self.name}日报添加标识符: {identifier}")
+                    if self._supports_detail():
+                        identifier = f"#daily_type:{self.name}"
+                        message.append(identifier)
+                        logger.debug(f"已为{self.name}日报添加标识符: {identifier}")
 
                 news_cache.set(self.name, format_type, message)
 
@@ -137,6 +139,11 @@ class BaseNewsSource(ABC):
     async def generate_text(self, news_data: NewsData) -> Message:
         """生成文本格式的消息"""
         pass
+
+    def _supports_detail(self) -> bool:
+        """检查是否支持详情功能"""
+        detail_supported_types = ["ithome", "知乎"]
+        return self.name in detail_supported_types
 
 
 news_sources: dict[str, BaseNewsSource] = {}
