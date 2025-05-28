@@ -1,12 +1,14 @@
-from nonebot.adapters.onebot.v11 import Message, MessageSegment
+from nonebot.adapters.onebot.v11 import Message
 
+from ...config import TemplateConfig
 from ...models import NewsData
-from ...utils import get_today_date, render_news_to_image
+from ...utils import get_today_date
 from ..manager import api_manager
 from .base import BaseNewsSource, register_news_source
+from .mixins import ImageRenderMixin, TextFormatMixin, NewsItemProcessorMixin
 
 
-class HistoryNewsSource(BaseNewsSource):
+class HistoryNewsSource(BaseNewsSource, ImageRenderMixin, TextFormatMixin, NewsItemProcessorMixin):
     """历史上的今天日报源"""
 
     def __init__(self):
@@ -18,11 +20,7 @@ class HistoryNewsSource(BaseNewsSource):
             formats=["image", "text"],
             aliases=[
                 "历史",
-                "历史事件",
-                "历史上今天",
                 "today",
-                "history",
-                "历史上的今",
             ],
         )
 
@@ -32,58 +30,32 @@ class HistoryNewsSource(BaseNewsSource):
 
     async def generate_image(self, news_data: NewsData) -> Message:
         """生成图片格式的消息"""
-        from nonebot import logger
-
-        if hasattr(news_data, "binary_data") and news_data.binary_data is not None:
-            logger.debug("检测到二进制图片数据，直接使用API返回的图片")
-            return Message(MessageSegment.image(news_data.binary_data))
-
-        logger.debug("未检测到二进制图片数据，将文本渲染为图片")
-
-        if len(news_data.items) > 20:
-            logger.info(
-                f"历史上的今天条目过多，限制为20条 (原有{len(news_data.items)}条)"
-            )
-            news_data.items = news_data.items[:20]
-
-        for i, item in enumerate(news_data.items):
-            if not item.index:
-                item.index = i + 1
-
-        pic = await render_news_to_image(
+        # 处理新闻条目
+        news_data = self.process_news_items(
             news_data,
-            "history.html",
-            f"历史上的今天 ({get_today_date()})",
-            {
-                "date": get_today_date(),
-            },
+            max_items=20,
+            ensure_index=True,
+            ensure_url=False
         )
 
-        logger.debug(f"成功渲染历史上的今天图片，大小: {len(pic)} 字节")
-        return Message(MessageSegment.image(pic))
+        return await self.render_with_fallback(
+            news_data,
+            TemplateConfig.TEMPLATES["历史上的今天"],
+            f"历史上的今天 ({get_today_date()})",
+            {"date": get_today_date()}
+        )
 
     async def generate_text(self, news_data: NewsData) -> Message:
         """生成文本格式的消息"""
-        from nonebot import logger
-
-        max_items = 20
-        if len(news_data.items) > max_items:
-            logger.info(
-                f"历史上的今天文本格式条目过多，限制为{max_items}条 (原有{len(news_data.items)}条)"
-            )
-            news_data.items = news_data.items[:max_items]
-
         today = get_today_date().split("年")[1]
-        message = Message(f"【历史上的今天 ({today})】\n\n")
-
-        for i, item in enumerate(news_data.items, 1):
-            title = item.title
-            if len(title) > 60:
-                title = title[:57] + "..."
-
-            message.append(f"{i}. {title}\n\n")
-
-        return message
+        return self.format_text_with_limit(
+            news_data,
+            f"历史上的今天 ({today})",
+            max_items=20,
+            title_max_length=60,
+            show_description=False,
+            show_url=False
+        )
 
 
 history_source = HistoryNewsSource()
