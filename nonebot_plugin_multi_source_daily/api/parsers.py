@@ -323,6 +323,64 @@ class BinaryImageParser(ApiParser):
             )
 
 
+class Viki60sJsonParser(ApiParser):
+    """Viki 60s JSON解析器"""
+
+    async def parse(self, response: httpx.Response) -> NewsData:
+        """解析API响应"""
+        try:
+            data = response.json()
+            logger.debug(f"Viki 60s API响应: {data}")
+
+            if not isinstance(data, dict) or data.get("code") != 200:
+                raise APIResponseParseException(
+                    message="API响应格式错误或状态码不正确",
+                    parser="viki_60s_json",
+                )
+
+            api_data = data.get("data", {})
+            if not isinstance(api_data, dict):
+                raise APIResponseParseException(
+                    message="API数据格式错误",
+                    parser="viki_60s_json",
+                )
+
+            date = api_data.get("date", datetime.now().strftime("%Y-%m-%d"))
+            news_data = NewsData(
+                title=f"每日60秒 ({date})",
+                update_time=api_data.get("api_updated", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                source="60s-api.viki.moe",
+            )
+
+            # 获取新闻列表
+            news_list = api_data.get("news", [])
+            if isinstance(news_list, list):
+                for i, news_item in enumerate(news_list, 1):
+                    if isinstance(news_item, str) and news_item.strip():
+                        news_data.add_item(
+                            NewsItem(
+                                title=news_item.strip(),
+                                index=i,
+                            )
+                        )
+
+            if not news_data.items:
+                logger.warning("Viki 60s API解析后没有有效数据")
+                raise APIResponseParseException(
+                    message="未获取到60s新闻数据",
+                    parser="viki_60s_json",
+                )
+
+            logger.info(f"Viki 60s API解析成功，共 {len(news_data.items)} 条数据")
+            return news_data
+        except Exception as e:
+            logger.error(f"Viki 60s JSON解析器解析失败: {e}")
+            raise APIResponseParseException(
+                message=f"Viki 60s JSON解析器解析失败: {e}",
+                parser="viki_60s_json",
+            )
+
+
 class HistoryTodayParser(ApiParser):
     """历史上的今天解析器"""
 
@@ -405,6 +463,7 @@ PARSERS: dict[str, type[ApiParser]] = {
     "oioweb": OIOWebZhihuParser,
     "rss": RssParser,
     "binary_image": BinaryImageParser,
+    "viki_60s_json": Viki60sJsonParser,
     "history_today": HistoryTodayParser,
 }
 

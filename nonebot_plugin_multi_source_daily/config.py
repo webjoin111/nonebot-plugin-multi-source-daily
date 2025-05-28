@@ -94,6 +94,11 @@ class Config(BaseModel):
                 priority=1,
                 parser="binary_image",
             ),
+            ApiSource(
+                url="https://60s-api.viki.moe/v2/60s",
+                priority=2,
+                parser="viki_60s_json",
+            ),
         ]
     )
 
