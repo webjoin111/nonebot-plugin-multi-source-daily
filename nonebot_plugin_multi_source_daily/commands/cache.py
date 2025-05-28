@@ -38,11 +38,13 @@ async def handle_daily_news_cache(
     res: CommandResult,
 ):
     """处理日报缓存命令"""
+    from nonebot import logger
+
     arp = res.result
 
-    operation = arp.all_matched_args.get("operation", "状态")
-    news_type = arp.all_matched_args.get("type")
-    reset_all = "-a" in arp.options or "--all" in arp.options
+    operation = arp.main_args.get("operation", "状态")
+    news_type = arp.main_args.get("type")
+    reset_all = "all" in arp.options
 
     if operation in ["状态", "state", "status"]:
         if news_type:
@@ -90,6 +92,8 @@ async def handle_daily_news_cache(
         return
 
     if operation in ["重置", "reset", "clear", "刷新", "refresh"]:
+        logger.debug(f"执行重置操作 - reset_all: {reset_all}, news_type: {news_type}")
+
         if reset_all:
             count = news_cache.clear()
             await matcher.send(f"已重置所有日报缓存，共 {count} 项")
