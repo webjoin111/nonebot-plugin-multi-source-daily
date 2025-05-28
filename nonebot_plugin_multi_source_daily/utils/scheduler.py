@@ -38,7 +38,10 @@ class ScheduleManager:
                 scheduler.remove_job(job_id)
                 logger.debug(f"已移除旧的定时任务: {job_id}")
             except Exception as e:
-                logger.debug(f"移除旧任务时出现异常(可能任务不存在): {e}")
+                if "No job by the id" in str(e):
+                    logger.debug(f"旧任务 {job_id} 不存在，跳过移除")
+                else:
+                    logger.debug(f"移除旧任务时出现异常: {e}")
 
             scheduler.add_job(
                 self.send_daily_news,
@@ -82,7 +85,10 @@ class ScheduleManager:
                 scheduler.remove_job(job_id)
                 logger.debug(f"已移除定时任务: {job_id}")
             except Exception as e:
-                logger.debug(f"移除任务时出现异常(可能任务不存在): {e}")
+                if "No job by the id" in str(e):
+                    logger.debug(f"任务 {job_id} 不存在，跳过移除")
+                else:
+                    logger.debug(f"移除任务时出现异常: {e}")
 
             schedule_store.remove_group_schedule(group_id, news_type)
 
