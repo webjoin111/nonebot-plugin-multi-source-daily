@@ -457,6 +457,47 @@ class HistoryTodayParser(ApiParser):
             )
 
 
+class ZhihuHotParser(ApiParser):
+    """知乎热榜解析器"""
+
+    async def parse(self, response: httpx.Response) -> NewsData:
+        """解析API响应"""
+        try:
+            data = response.json()
+
+            news_data = NewsData(
+                title="知乎热榜",
+                update_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                source="知乎",
+            )
+
+            if isinstance(data, dict) and "data" in data:
+                items = data["data"]
+                if isinstance(items, list):
+                    for i, item in enumerate(items, 1):
+                        if isinstance(item, dict):
+                            title = item.get("title", "")
+                            url = item.get("link", "")
+                            hot_value = item.get("hot_value_desc", "")
+                            if title:
+                                news_data.add_item(
+                                    NewsItem(
+                                        title=title,
+                                        url=url,
+                                        index=i,
+                                        hot=hot_value,
+                                    )
+                                )
+
+            return news_data
+        except Exception as e:
+            logger.error(f"知乎热榜解析器解析失败: {e}")
+            raise APIResponseParseException(
+                message=f"知乎热榜解析器解析失败: {e}",
+                parser="zhihu_hot",
+            )
+
+
 PARSERS: dict[str, type[ApiParser]] = {
     "default": DefaultParser,
     "vvhan": VVHanZhihuParser,
@@ -465,6 +506,7 @@ PARSERS: dict[str, type[ApiParser]] = {
     "binary_image": BinaryImageParser,
     "viki_60s_json": Viki60sJsonParser,
     "history_today": HistoryTodayParser,
+    "zhihu_hot": ZhihuHotParser,
 }
 
 

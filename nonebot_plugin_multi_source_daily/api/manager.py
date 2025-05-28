@@ -436,6 +436,8 @@ def init_api_sources():
 
     api_manager.register_api_sources("知乎日报", config.daily_news_zhihu_apis)
 
+    api_manager.register_api_sources("知乎热榜", config.daily_news_zhihu_hot_apis)
+
     api_manager.register_api_sources("moyu", config.daily_news_moyu_apis)
 
     api_manager.register_api_sources("ithome", config.daily_news_ithome_apis)

@@ -14,6 +14,8 @@ class NewsLimits:
     """新闻条目数量限制"""
     ZHIHU_IMAGE_MAX_ITEMS = 15
     ZHIHU_TEXT_MAX_ITEMS = 10
+    ZHIHU_HOT_IMAGE_MAX_ITEMS = 15
+    ZHIHU_HOT_TEXT_MAX_ITEMS = 10
     TITLE_MAX_LENGTH = 50
     DEFAULT_TEXT_MAX_ITEMS = 10
 
@@ -38,6 +40,7 @@ class TemplateConfig:
     TEMPLATES = {
         "60s": "sixty_seconds.html",
         "知乎日报": "zhihu.html",
+        "知乎热榜": "zhihu_hot.html",
         "ithome": "ithome.html",
         "历史上的今天": "history.html",
         "moyu": "news_template.html",
@@ -57,10 +60,11 @@ class FormatConfig:
 
 class DetailConfig:
     """详情功能配置"""
-    SUPPORTED_TYPES = ["ithome", "知乎日报"]
+    SUPPORTED_TYPES = ["ithome", "知乎日报", "知乎热榜"]
     DISPLAY_NAMES = {
         "ithome": "IT之家",
-        "知乎日报": "知乎日报"
+        "知乎日报": "知乎日报",
+        "知乎热榜": "知乎热榜"
     }
 
 
@@ -112,6 +116,16 @@ class Config(BaseModel):
         ]
     )
 
+    daily_news_zhihu_hot_apis: list[ApiSource] = Field(
+        default_factory=lambda: [
+            ApiSource(
+                url="https://60s-api.viki.moe/v2/zhihu",
+                priority=1,
+                parser="zhihu_hot",
+            ),
+        ]
+    )
+
     daily_news_moyu_apis: list[ApiSource] = Field(
         default_factory=lambda: [
             ApiSource(
@@ -157,6 +171,7 @@ class Config(BaseModel):
         sources_map = {
             "60s": self.daily_news_60s_apis,
             "知乎日报": self.daily_news_zhihu_apis,
+            "知乎热榜": self.daily_news_zhihu_hot_apis,
             "moyu": self.daily_news_moyu_apis,
             "ithome": self.daily_news_ithome_apis,
             "历史上的今天": self.daily_news_history_apis,
