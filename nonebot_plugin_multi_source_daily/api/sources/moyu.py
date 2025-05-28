@@ -13,11 +13,11 @@ class MoyuNewsSource(BaseNewsSource, ImageRenderMixin):
     def __init__(self):
         """初始化摸鱼人日历日报源"""
         super().__init__(
-            name="moyu",
+            name="摸鱼日历",
             description="摸鱼人日历",
             default_format="image",
             formats=["image"],
-            aliases=["摸鱼", "摸鱼人", "摸鱼日历", "摸鱼日报"],
+            aliases=["摸鱼","moyu"],
         )
 
     async def fetch_data(self, api_index: int = None) -> NewsData:
@@ -28,7 +28,7 @@ class MoyuNewsSource(BaseNewsSource, ImageRenderMixin):
         """生成图片格式的消息"""
         return await self.render_with_fallback(
             news_data,
-            TemplateConfig.TEMPLATES["moyu"],
+            TemplateConfig.TEMPLATES["摸鱼日历"],
             "摸鱼人日历",
             {}
         )

@@ -19,6 +19,7 @@ class WeiboHotNewsSource(
             name="微博热搜",
             description="微博热搜榜热门话题",
             default_format="image",
+            aliases=["weibo","微博"],
             formats=["image", "text"],
         )
 

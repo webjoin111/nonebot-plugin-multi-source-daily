@@ -94,6 +94,8 @@ async def extract_news_type_from_reply(event: MessageEvent) -> str | None:
     type_keywords = {
         "IT之家": ["it之家", "it", "ithome", "IT之家", "IT"],
         "知乎日报": ["知乎日报", "zhihu"],
+        "知乎热榜": ["知乎热榜", "zhihu_hot"],
+        "微博热搜": ["微博热搜", "weibo", "微博"],
         "历史上的今天": ["历史上的今天", "历史", "history", "HISTORY"],
     }
 

@@ -17,11 +17,11 @@ class SixtySecondsNewsSource(
     def __init__(self):
         """初始化60秒日报源"""
         super().__init__(
-            name="60s",
+            name="60秒",
             description="每日60秒读懂世界",
             default_format="image",
             formats=["image", "text"],
-            aliases=["60秒", "早报", "每日60秒", "60s日报", "60秒日报"],
+            aliases=["60s"],
         )
 
     async def fetch_data(self, api_index: int = None) -> NewsData:
@@ -46,7 +46,7 @@ class SixtySecondsNewsSource(
         """生成图片格式的消息"""
         return await self.render_with_fallback(
             news_data,
-            TemplateConfig.TEMPLATES["60s"],
+            TemplateConfig.TEMPLATES["60秒"],
             f"每日60秒 ({get_today_date()})",
             {"date": get_today_date()},
         )

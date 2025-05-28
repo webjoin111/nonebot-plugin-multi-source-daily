@@ -40,13 +40,13 @@ class RetryConfig:
 class TemplateConfig:
     """模板配置"""
     TEMPLATES = {
-        "60s": "sixty_seconds.html",
+        "60秒": "sixty_seconds.html",
         "知乎日报": "zhihu.html",
         "知乎热榜": "zhihu_hot.html",
         "微博热搜": "weibo_hot.html",
-        "ithome": "ithome.html",
+        "IT之家": "ithome.html",
         "历史上的今天": "history.html",
-        "moyu": "news_template.html",
+        "摸鱼日历": "news_template.html",
     }
 
 
@@ -63,9 +63,9 @@ class FormatConfig:
 
 class DetailConfig:
     """详情功能配置"""
-    SUPPORTED_TYPES = ["ithome", "知乎日报", "知乎热榜", "微博热搜"]
+    SUPPORTED_TYPES = ["IT之家", "知乎日报", "知乎热榜", "微博热搜"]
     DISPLAY_NAMES = {
-        "ithome": "IT之家",
+        "IT之家": "IT之家",
         "知乎日报": "知乎日报",
         "知乎热榜": "知乎热榜",
         "微博热搜": "微博热搜"
@@ -183,12 +183,12 @@ class Config(BaseModel):
     def get_api_sources(self, news_type: str) -> list[ApiSource]:
         """获取API源列表"""
         sources_map = {
-            "60s": self.daily_news_60s_apis,
+            "60秒": self.daily_news_60s_apis,
             "知乎日报": self.daily_news_zhihu_apis,
             "知乎热榜": self.daily_news_zhihu_hot_apis,
             "微博热搜": self.daily_news_weibo_hot_apis,
-            "moyu": self.daily_news_moyu_apis,
-            "ithome": self.daily_news_ithome_apis,
+            "摸鱼日历": self.daily_news_moyu_apis,
+            "IT之家": self.daily_news_ithome_apis,
             "历史上的今天": self.daily_news_history_apis,
         }
         return sources_map.get(news_type, [])

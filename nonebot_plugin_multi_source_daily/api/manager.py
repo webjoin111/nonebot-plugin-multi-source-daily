@@ -432,7 +432,7 @@ api_manager = ApiManager()
 
 def init_api_sources():
     """从配置中初始化API源"""
-    api_manager.register_api_sources("60s", config.daily_news_60s_apis)
+    api_manager.register_api_sources("60秒", config.daily_news_60s_apis)
 
     api_manager.register_api_sources("知乎日报", config.daily_news_zhihu_apis)
 
@@ -440,8 +440,8 @@ def init_api_sources():
 
     api_manager.register_api_sources("微博热搜", config.daily_news_weibo_hot_apis)
 
-    api_manager.register_api_sources("moyu", config.daily_news_moyu_apis)
+    api_manager.register_api_sources("摸鱼日历", config.daily_news_moyu_apis)
 
-    api_manager.register_api_sources("ithome", config.daily_news_ithome_apis)
+    api_manager.register_api_sources("IT之家", config.daily_news_ithome_apis)
 
     api_manager.register_api_sources("历史上的今天", config.daily_news_history_apis)

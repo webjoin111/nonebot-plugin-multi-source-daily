@@ -14,11 +14,11 @@ class ITHomeNewsSource(BaseNewsSource, TextFormatMixin, ImageSizeOptimizationMix
     def __init__(self):
         """初始化IT之家日报源"""
         super().__init__(
-            name="ithome",
+            name="IT之家",
             description="IT之家科技新闻日报",
             default_format="image",
             formats=["image", "text"],
-            aliases=["it之家", "IT之家", "it", "IT"],
+            aliases=["it之家", "it", "IT"],
         )
 
     async def fetch_data(self, api_index: int = None) -> NewsData:
@@ -30,7 +30,7 @@ class ITHomeNewsSource(BaseNewsSource, TextFormatMixin, ImageSizeOptimizationMix
         try:
             return await self.render_with_size_optimization(
                 news_data,
-                TemplateConfig.TEMPLATES["ithome"],
+                TemplateConfig.TEMPLATES["IT之家"],
                 f"IT之家日报 ({get_today_date()})",
                 {"date": get_today_date()},
                 max_size_mb=1.0,
