@@ -58,6 +58,13 @@ class ApiManager:
                 logger.debug("API源状态数据为空，跳过加载")
                 return False
 
+            if "知乎" in status_data and "知乎日报" not in status_data:
+                status_data["知乎日报"] = status_data["知乎"]
+                del status_data["知乎"]
+                logger.info("已将旧的'知乎'API源状态迁移到'知乎日报'")
+                api_status_store.data = status_data
+                api_status_store.save()
+
             for news_type, sources_data in status_data.items():
                 if news_type not in self.api_sources:
                     logger.warning(f"未知的日报类型: {news_type}，跳过加载")
@@ -412,7 +419,7 @@ def init_api_sources():
     """从配置中初始化API源"""
     api_manager.register_api_sources("60s", config.daily_news_60s_apis)
 
-    api_manager.register_api_sources("知乎", config.daily_news_zhihu_apis)
+    api_manager.register_api_sources("知乎日报", config.daily_news_zhihu_apis)
 
     api_manager.register_api_sources("moyu", config.daily_news_moyu_apis)
 

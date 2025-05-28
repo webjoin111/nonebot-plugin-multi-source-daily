@@ -12,11 +12,10 @@ class ZhihuNewsSource(BaseNewsSource):
     def __init__(self):
         """初始化知乎日报源"""
         super().__init__(
-            name="知乎",
+            name="知乎日报",
             description="知乎日报热门文章",
             default_format="image",
             formats=["image", "text"],
-            aliases=["知乎日报", "知乎热榜", "zhihu"],
         )
 
     async def fetch_data(self) -> NewsData:

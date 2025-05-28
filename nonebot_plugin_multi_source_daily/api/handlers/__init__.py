@@ -17,7 +17,7 @@ def get_news_handler(name: str):
     if name.upper() == "IT":
         return ithome_handler
 
-    if name == "知乎":
+    if name == "知乎日报":
         return zhihu_handler
 
     handler = NewsHandlerFactory.get_handler(name)

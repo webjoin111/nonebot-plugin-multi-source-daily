@@ -102,6 +102,23 @@ class ScheduleStorage(BaseStorage[Dict[str, Dict[str, Dict[str, Any]]]]):
     def __init__(self):
         """初始化定时任务存储"""
         super().__init__("schedules.json", {})
+        self._migrate_old_data()
+
+    def _migrate_old_data(self) -> bool:
+        """迁移旧数据：将'知乎'改为'知乎日报'"""
+        migrated = False
+        for group_id, schedules in self.data.items():
+            if "知乎" in schedules:
+                schedules["知乎日报"] = schedules["知乎"]
+                del schedules["知乎"]
+                migrated = True
+                logger.info(f"已将群 {group_id} 的'知乎'定时任务迁移到'知乎日报'")
+
+        if migrated:
+            self.save()
+            logger.info("定时任务数据迁移完成")
+
+        return migrated
 
     def set_group_schedule(
         self, group_id: int, news_type: str, schedule_time: str, format_type: str
@@ -135,7 +152,9 @@ class ScheduleStorage(BaseStorage[Dict[str, Dict[str, Dict[str, Any]]]]):
         """获取所有定时任务配置"""
         return self.data
 
-    def get_group_schedule(self, group_id: int, news_type: str) -> Dict[str, Any] | None:
+    def get_group_schedule(
+        self, group_id: int, news_type: str
+    ) -> Dict[str, Any] | None:
         """获取群组的特定日报类型的定时任务配置"""
         group_id_str = str(group_id)
         if group_id_str in self.data and news_type in self.data[group_id_str]:

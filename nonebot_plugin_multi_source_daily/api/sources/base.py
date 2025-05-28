@@ -85,9 +85,9 @@ class BaseNewsSource(ABC):
                 message = Message(MessageSegment.image(news_data.binary_data))
 
                 if self._supports_detail():
-                    identifier = f"#daily_type:{self.name}"
-                    message.append(identifier)
-                    logger.debug(f"已为{self.name}日报添加标识符: {identifier}")
+                    display_name = self._get_detail_display_name()
+                    message.append(display_name)
+                    logger.debug(f"已为{self.name}日报添加显示名称: {display_name}")
 
                 news_cache.set(self.name, format_type, message)
 
@@ -114,9 +114,9 @@ class BaseNewsSource(ABC):
             if message and len(message) > 0:
                 if format_type == "image" and message[0].type == "image":
                     if self._supports_detail():
-                        identifier = f"#daily_type:{self.name}"
-                        message.append(identifier)
-                        logger.debug(f"已为{self.name}日报添加标识符: {identifier}")
+                        display_name = self._get_detail_display_name()
+                        message.append(display_name)
+                        logger.debug(f"已为{self.name}日报添加显示名称: {display_name}")
 
                 news_cache.set(self.name, format_type, message)
 
@@ -142,8 +142,16 @@ class BaseNewsSource(ABC):
 
     def _supports_detail(self) -> bool:
         """检查是否支持详情功能"""
-        detail_supported_types = ["ithome", "知乎"]
+        detail_supported_types = ["ithome", "知乎日报"]
         return self.name in detail_supported_types
+
+    def _get_detail_display_name(self) -> str:
+        """获取详情功能的显示名称"""
+        display_names = {
+            "ithome": "IT之家",
+            "知乎日报": "知乎日报"
+        }
+        return display_names.get(self.name, self.name)
 
 
 news_sources: dict[str, BaseNewsSource] = {}

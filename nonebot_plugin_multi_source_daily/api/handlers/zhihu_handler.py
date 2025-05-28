@@ -13,8 +13,8 @@ class ZhihuNewsHandler(BaseNewsHandler):
     def __init__(self):
         """初始化知乎日报处理器"""
         super().__init__(
-            name="知乎",
-            aliases=["知乎日报", "知乎热榜", "zhihu"],
+            name="知乎日报",
+            aliases=[],
         )
 
     async def fetch_news_data(self) -> NewsData:

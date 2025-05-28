@@ -79,10 +79,8 @@ class NewsHandlerFactory:
             for special_alias in special_aliases:
                 cls._aliases[special_alias] = handler_name_lower
 
-        if handler.name.lower() == "知乎":
-            special_aliases = ["知乎", "zhihu", "ZHIHU"]
-            for special_alias in special_aliases:
-                cls._aliases[special_alias] = handler_name_lower
+        if handler.name == "知乎日报":
+            pass
 
     @classmethod
     def get_handler(cls, name: str) -> Optional[BaseNewsHandler]:
@@ -90,8 +88,8 @@ class NewsHandlerFactory:
         if name.upper() == "IT":
             return cls._handlers.get("ithome")
 
-        if name == "知乎":
-            return cls._handlers.get("知乎")
+        if name == "知乎日报":
+            return cls._handlers.get("知乎日报")
 
         name_lower = name.lower()
 
@@ -104,8 +102,8 @@ class NewsHandlerFactory:
         if name_lower == "it":
             return cls._handlers.get("ithome")
 
-        if name_lower == "zhihu":
-            return cls._handlers.get("知乎")
+        if name_lower == "知乎日报":
+            return cls._handlers.get("知乎日报")
 
         return None
 

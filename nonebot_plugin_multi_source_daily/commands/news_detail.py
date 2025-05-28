@@ -83,18 +83,17 @@ async def extract_news_type_from_reply(event: MessageEvent) -> str | None:
     text = reply_msg.extract_plain_text()
     logger.debug(f"回复消息文本: {text}")
 
-    import re
+    detail_display_names = {"IT之家": "IT之家", "知乎日报": "知乎日报"}
 
-    pattern = r"#daily_type:(\S+)"
-    match = re.search(pattern, text)
-    if match:
-        news_type = match.group(1)
-        logger.debug(f"从标识符中识别到日报类型: {news_type}")
-        return news_type
+    for display_name, handler_name in detail_display_names.items():
+        if display_name in text:
+            logger.debug(f"从文本中识别到显示名称: {display_name}")
+            logger.debug(f"映射到日报类型: {handler_name}")
+            return handler_name
 
     type_keywords = {
         "IT之家": ["it之家", "it", "ithome", "IT之家", "IT"],
-        "知乎": ["知乎", "知乎日报", "知乎热榜", "zhihu", "ZHIHU"],
+        "知乎日报": ["知乎日报", "zhihu"],
         "历史上的今天": ["历史上的今天", "历史", "history", "HISTORY"],
     }
 
@@ -113,7 +112,7 @@ async def extract_news_type_from_reply(event: MessageEvent) -> str | None:
             if "ithome" in url_lower or "it之家" in url_lower:
                 return "IT之家"
             elif "zhihu" in url_lower or "知乎" in url_lower:
-                return "知乎"
+                return "知乎日报"
             elif "history" in url_lower or "历史" in url_lower:
                 return "历史上的今天"
 

@@ -77,7 +77,7 @@ class Config(BaseModel):
         """获取API源列表"""
         sources_map = {
             "60s": self.daily_news_60s_apis,
-            "知乎": self.daily_news_zhihu_apis,
+            "知乎日报": self.daily_news_zhihu_apis,
             "moyu": self.daily_news_moyu_apis,
             "ithome": self.daily_news_ithome_apis,
             "历史上的今天": self.daily_news_history_apis,
