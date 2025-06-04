@@ -1,13 +1,12 @@
 from typing import Any
 
 from nonebot import get_bot, logger, require
+from ..exceptions import InvalidTimeFormatException, ScheduleException
+from .core import format_time, validate_time, schedule_store
 
 require("nonebot_plugin_apscheduler")
-from nonebot_plugin_apscheduler import scheduler
+from nonebot_plugin_apscheduler import scheduler  # noqa: E402
 
-from ..exceptions import InvalidTimeFormatException, ScheduleException
-from .helpers import format_time, validate_time
-from .storage import schedule_store
 
 
 class ScheduleManager:
@@ -67,9 +66,7 @@ class ScheduleManager:
             )
             return True
         except Exception as e:
-            logger.error(
-                f"添加定时任务失败 [group_id={group_id}, news_type={news_type}]: {e}"
-            )
+            logger.error(f"添加定时任务失败 [group_id={group_id}, news_type={news_type}]: {e}")
             raise ScheduleException(
                 message=f"添加定时任务失败: {e}",
                 group_id=group_id,
@@ -94,9 +91,7 @@ class ScheduleManager:
 
             return True
         except Exception as e:
-            logger.error(
-                f"移除定时任务失败 [group_id={group_id}, news_type={news_type}]: {e}"
-            )
+            logger.error(f"移除定时任务失败 [group_id={group_id}, news_type={news_type}]: {e}")
             raise ScheduleException(
                 message=f"移除定时任务失败: {e}",
                 group_id=group_id,
@@ -123,15 +118,11 @@ class ScheduleManager:
             job_news_type = parts[3]
 
             next_run = job.next_run_time
-            next_run_str = (
-                next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "未知"
-            )
+            next_run_str = next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "未知"
 
             schedule_config = None
             if schedule_store:
-                schedule_config = schedule_store.get_group_schedule(
-                    job_group_id, job_news_type
-                )
+                schedule_config = schedule_store.get_group_schedule(job_group_id, job_news_type)
 
             format_type = "image"
             if schedule_config and "format_type" in schedule_config:
@@ -184,9 +175,7 @@ class ScheduleManager:
 
             return True
         except Exception as e:
-            logger.error(
-                f"发送日报失败 [group_id={group_id}, news_type={news_type}]: {e}"
-            )
+            logger.error(f"发送日报失败 [group_id={group_id}, news_type={news_type}]: {e}")
             return False
 
     async def init_jobs(self) -> bool:
@@ -231,9 +220,7 @@ class ScheduleManager:
             except Exception as e:
                 logger.error(f"添加缓存清理任务失败: {e}")
 
-            logger.info(
-                f"日报调度器初始化完成，已加载 {len(scheduler.get_jobs())} 个定时任务"
-            )
+            logger.info(f"日报调度器初始化完成，已加载 {len(scheduler.get_jobs())} 个定时任务")
             return True
         except Exception as e:
             logger.error(f"日报调度器初始化失败: {e}")

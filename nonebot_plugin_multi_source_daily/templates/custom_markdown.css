@@ -1,23 +1,240 @@
+@charset "UTF-8";
+
 body {
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 16px;
+    padding: 0;
+    font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "SimHei", Arial, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    color: #333;
 }
+
+/* 主标题样式 */
 h1 {
     font-size: 20px;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin: 0 0 16px 0;
+    padding: 16px 20px;
+    color: #fff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    font-weight: 600;
 }
+
+/* 查询时间样式 - 针对第一个p标签 */
+body > p:first-of-type {
+    text-align: center;
+    margin: 0 0 20px 0;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 6px;
+    color: #666;
+    font-size: 11px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 群组标题样式 */
 h2 {
-    font-size: 18px;
-    margin-top: 8px;
-    margin-bottom: 8px;
-}
-h3 {
     font-size: 16px;
-    margin-top: 6px;
-    margin-bottom: 6px;
+    margin: 20px 0 12px 0;
+    padding: 12px 16px;
+    color: #fff;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border-radius: 6px;
+    font-weight: 500;
+    box-shadow: 0 3px 8px rgba(79, 172, 254, 0.3);
 }
-p, ul, li {
-    font-size: 14px;
+
+/* 日报项目样式 */
+p {
+    margin: 8px 0;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 6px;
+    border-left: 4px solid #4facfe;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    line-height: 1.5;
+    color: #555;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+p:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 1);
+}
+
+/* 分隔线样式 */
+hr {
+    border: none;
+    height: 2px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    margin: 16px 0;
+    border-radius: 1px;
+    opacity: 0.3;
+}
+
+/* 日报名称样式 */
+strong {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 13px;
+}
+
+/* 列表样式 */
+ul {
+    padding-left: 16px;
+    margin: 8px 0;
+}
+
+li {
     margin: 4px 0;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    border-left: 3px solid #28a745;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+h3 {
+    font-size: 14px;
+    margin: 16px 0 8px 0;
+    padding: 8px 12px;
+    color: #fff;
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    border-radius: 4px;
+    font-weight: 500;
+    color: #8b4513;
+}
+
+/* API源项目样式 */
+.api-source {
+    margin-bottom: 8px;
+    padding: 12px 16px;
+    border-left: 4px solid #007acc;
+    background: linear-gradient(135deg, rgba(0, 122, 204, 0.05) 0%, rgba(0, 122, 204, 0.02) 100%);
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* 定时任务项目样式 */
+.schedule-item {
+    margin-bottom: 8px;
+    padding: 12px 16px;
+    border-left: 4px solid #28a745;
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.05) 0%, rgba(40, 167, 69, 0.02) 100%);
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* 特殊内容样式 */
+p:contains("?") {
+    text-align: center;
+    font-style: italic;
+    color: #999;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left-color: #6c757d;
+}
+
+/* 时间信息特殊样式 */
+p:contains("?") {
+    border-left-color: #ffc107;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, rgba(255, 193, 7, 0.02) 100%);
+}
+
+
+
+/* 描述信息样式 */
+p:contains("?") {
+    border-left-color: #17a2b8;
+    background: linear-gradient(135deg, rgba(23, 162, 184, 0.05) 0%, rgba(23, 162, 184, 0.02) 100%);
+}
+
+/* API源地址样式 */
+p:contains("地址") {
+    border-left-color: #6f42c1;
+    background: linear-gradient(135deg, rgba(111, 66, 193, 0.05) 0%, rgba(111, 66, 193, 0.02) 100%);
+}
+
+/* API源状态样式 */
+p:contains("状态") {
+    border-left-color: #20c997;
+    background: linear-gradient(135deg, rgba(32, 201, 151, 0.05) 0%, rgba(32, 201, 151, 0.02) 100%);
+}
+
+/* 优先级样式 */
+p:contains("优先级") {
+    border-left-color: #fd7e14;
+    background: linear-gradient(135deg, rgba(253, 126, 20, 0.05) 0%, rgba(253, 126, 20, 0.02) 100%);
+}
+
+/* 失败次数样式 */
+p:contains("失败次数") {
+    border-left-color: #dc3545;
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.05) 0%, rgba(220, 53, 69, 0.02) 100%);
+}
+
+/* 上次成功样式 */
+p:contains("上次成功") {
+    border-left-color: #198754;
+    background: linear-gradient(135deg, rgba(25, 135, 84, 0.05) 0%, rgba(25, 135, 84, 0.02) 100%);
+}
+
+/* 表格样式 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 11px;
+}
+
+td {
+    padding: 10px 8px;
+    text-align: center;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 10px;
+    line-height: 1.3;
+}
+
+tr:nth-child(even) {
+    background: rgba(248, 249, 250, 0.5);
+}
+
+tr:hover {
+    background: rgba(79, 172, 254, 0.1);
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+/* 表格内的链接样式 */
+td:first-child {
+    text-align: left;
+    font-weight: 500;
+    color: #495057;
+}
+
+/* 状态列样式 */
+td:nth-child(2) {
+    font-weight: 500;
+}
+
+/* 成功失败列样式 */
+td:nth-child(3) {
+    font-size: 9px;
+    line-height: 1.2;
 }

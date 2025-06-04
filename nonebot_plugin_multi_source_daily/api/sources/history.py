@@ -30,19 +30,13 @@ class HistoryNewsSource(BaseNewsSource, ImageRenderMixin, TextFormatMixin, NewsI
 
     async def generate_image(self, news_data: NewsData) -> Message:
         """生成图片格式的消息"""
-        # 处理新闻条目
-        news_data = self.process_news_items(
-            news_data,
-            max_items=20,
-            ensure_index=True,
-            ensure_url=False
-        )
+        news_data = self.process_news_items(news_data, max_items=20, ensure_index=True, ensure_url=False)
 
         return await self.render_with_fallback(
             news_data,
             TemplateConfig.TEMPLATES["历史上的今天"],
             f"历史上的今天 ({get_today_date()})",
-            {"date": get_today_date()}
+            {"date": get_today_date()},
         )
 
     async def generate_text(self, news_data: NewsData) -> Message:
@@ -54,7 +48,7 @@ class HistoryNewsSource(BaseNewsSource, ImageRenderMixin, TextFormatMixin, NewsI
             max_items=20,
             title_max_length=60,
             show_description=False,
-            show_url=False
+            show_url=False,
         )
 
 

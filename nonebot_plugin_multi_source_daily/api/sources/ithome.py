@@ -34,10 +34,11 @@ class ITHomeNewsSource(BaseNewsSource, TextFormatMixin, ImageSizeOptimizationMix
                 f"IT之家日报 ({get_today_date()})",
                 {"date": get_today_date()},
                 max_size_mb=1.0,
-                size_reduction_steps=[15, 10, 5]
+                size_reduction_steps=[15, 10, 5],
             )
         except Exception as e:
             from nonebot import logger
+
             logger.error(f"IT之家日报图片生成失败: {e}")
             return await self.generate_text(news_data)
 
@@ -49,7 +50,7 @@ class ITHomeNewsSource(BaseNewsSource, TextFormatMixin, ImageSizeOptimizationMix
             max_items=NewsLimits.ZHIHU_TEXT_MAX_ITEMS,
             title_max_length=NewsLimits.TITLE_MAX_LENGTH,
             show_url=True,
-            show_detail_hint=True
+            show_detail_hint=True,
         )
 
 

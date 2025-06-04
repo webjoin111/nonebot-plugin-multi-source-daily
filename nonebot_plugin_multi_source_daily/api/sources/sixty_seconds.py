@@ -9,9 +9,7 @@ from .base import BaseNewsSource, register_news_source
 from .mixins import ImageRenderMixin, TextFormatMixin, ConfigurableFormatMixin
 
 
-class SixtySecondsNewsSource(
-    BaseNewsSource, ImageRenderMixin, TextFormatMixin, ConfigurableFormatMixin
-):
+class SixtySecondsNewsSource(BaseNewsSource, ImageRenderMixin, TextFormatMixin, ConfigurableFormatMixin):
     """60秒日报源"""
 
     def __init__(self):

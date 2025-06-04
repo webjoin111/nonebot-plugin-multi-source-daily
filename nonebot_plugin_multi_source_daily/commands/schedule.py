@@ -26,6 +26,7 @@ from nonebot_plugin_alconna import (
 if HAS_HTMLRENDER:
     from nonebot_plugin_htmlrender import md_to_pic
 
+
 from ..api import get_news_source, news_sources
 from ..exceptions import (
     InvalidTimeFormatException,
@@ -38,9 +39,7 @@ from ..utils import (
     validate_time,
 )
 
-CUSTOM_CSS_PATH = str(
-    Path(__file__).parent.parent / "templates" / "custom_markdown.css"
-)
+CUSTOM_CSS_PATH = str(Path(__file__).parent.parent / "templates" / "custom_markdown.css")
 
 TIME_REGEX = r"(0?[0-9]|1[0-9]|2[0-3]):([0-5][0-9])|(0?[0-9]|1[0-9]|2[0-3])([0-5][0-9])"
 
@@ -65,11 +64,6 @@ daily_news_schedule = on_alconna(
             "查看",
             Option("-g", Args["target_group_id", int]),
             Option("-all", alias=["--all"], help_text="查看所有群组的订阅情况"),
-            Option("-t", alias=["--text"], help_text="以文本方式显示"),
-        ),
-        Subcommand(
-            "修复",
-            Option("-a|--all", help_text="重置所有定时任务配置"),
         ),
         meta=CommandMeta(
             compact=True,
@@ -77,8 +71,7 @@ daily_news_schedule = on_alconna(
             usage=(
                 "定时日报 设置 [类型] [HH:MM或HHMM] [-g 群号] [-all] [-f 格式]（仅限超级用户）\n"
                 "定时日报 取消 [类型] [-g 群号] [-all]（仅限超级用户）\n"
-                "定时日报 查看 [-g 群号] [-all] [-t]（-g 和 -all 参数仅限超级用户）\n"
-                "定时日报 修复 [-a]（仅限超级用户）"
+                "定时日报 查看 [-g 群号] [-all]（-g 和 -all 参数仅限超级用户）"
             ),
         ),
     ),
@@ -133,9 +126,7 @@ async def handle_daily_news_set(
 
     format_type = arp.all_matched_args.get("format_type", "image")
     if format_type not in source.formats:
-        await matcher.send(
-            f"不支持的格式: {format_type}，可用格式: {', '.join(source.formats)}"
-        )
+        await matcher.send(f"不支持的格式: {format_type}，可用格式: {', '.join(source.formats)}")
         return
 
     try:
@@ -151,9 +142,7 @@ async def handle_daily_news_set(
 
             for group in group_list:
                 try:
-                    await schedule_manager.add_job(
-                        group["group_id"], news_type, hour, minute, format_type
-                    )
+                    await schedule_manager.add_job(group["group_id"], news_type, hour, minute, format_type)
                     success_count += 1
                 except Exception as e:
                     logger.error(f"为群 {group['group_id']} 设置定时任务失败: {e}")
@@ -165,9 +154,7 @@ async def handle_daily_news_set(
             return
 
         if target_group:
-            await schedule_manager.add_job(
-                target_group, news_type, hour, minute, format_type
-            )
+            await schedule_manager.add_job(target_group, news_type, hour, minute, format_type)
             await matcher.send(
                 f"已为群 {target_group} 设置{news_type}日报，"
                 f"时间: {hour:02d}:{minute:02d}，格式: {format_type}"
@@ -176,9 +163,7 @@ async def handle_daily_news_set(
 
         if isinstance(event, GroupMessageEvent):
             group_id = event.group_id
-            await schedule_manager.add_job(
-                group_id, news_type, hour, minute, format_type
-            )
+            await schedule_manager.add_job(group_id, news_type, hour, minute, format_type)
             await matcher.send(
                 f"已为本群设置{news_type}日报，时间: {hour:02d}:{minute:02d}，格式: {format_type}"
             )
@@ -235,7 +220,7 @@ async def handle_daily_news_remove(
 
     try:
         if all_groups:
-            from ..utils.storage import schedule_store
+            from ..utils.core import schedule_store
 
             removed_count = 0
             groups = schedule_store.get_all_groups_by_news_type(news_type)
@@ -246,9 +231,7 @@ async def handle_daily_news_remove(
                 except Exception as e:
                     logger.error(f"为群 {group_id} 取消定时任务失败: {e}")
 
-            await matcher.send(
-                f"已取消所有群({removed_count}/{len(groups)}个)的{news_type}日报定时任务"
-            )
+            await matcher.send(f"已取消所有群({removed_count}/{len(groups)}个)的{news_type}日报定时任务")
             return
 
         if target_group:
@@ -292,10 +275,8 @@ async def handle_daily_news_view(
         view_options = arp.subcommands["查看"].options
         logger.debug(f"查看子命令选项: {view_options}")
         all_groups = "all" in view_options
-        use_text = "t" in view_options
     else:
         all_groups = "all" in arp.options
-        use_text = "t" in arp.options
 
     is_superuser = await SUPERUSER(bot, event)
     if (target_group or all_groups) and not is_superuser:
@@ -306,133 +287,100 @@ async def handle_daily_news_view(
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         if all_groups:
-            from ..utils.storage import schedule_store
+            from ..utils.core import schedule_store
 
             all_schedules = schedule_store.get_all_schedules()
             if not all_schedules:
                 await matcher.send("当前没有任何群组订阅日报")
                 return
 
-            if use_text:
-                message = f"【所有群组的日报订阅情况】\n查询时间: {current_time}\n\n"
+            html_data = {
+                "title": "所有群组的日报订阅情况",
+                "current_time": current_time,
+                "groups": [],
+            }
 
-                for group_id, schedules in all_schedules.items():
-                    try:
-                        group_info = await bot.get_group_info(group_id=int(group_id))
-                        group_name = group_info.get("group_name", f"群 {group_id}")
-                    except Exception:
-                        group_name = f"群 {group_id}"
+            for group_id, schedules in all_schedules.items():
+                try:
+                    group_info = await bot.get_group_info(group_id=int(group_id))
+                    group_name = group_info.get("group_name", f"群 {group_id}")
+                except Exception:
+                    group_name = f"群 {group_id}"
 
-                    message += f"● {group_name} ({group_id}):\n"
-
-                    if not schedules:
-                        message += "  - 该群没有订阅任何日报\n"
-                    else:
-                        for news_type, schedule in schedules.items():
-                            source = get_news_source(news_type)
-                            news_description = (
-                                source.description if source else "未知日报类型"
-                            )
-                            schedule_time = schedule.get("schedule_time", "未知时间")
-                            format_type = schedule.get("format_type", "image")
-
-                            message += f"  - {news_type} ({news_description})\n"
-                            message += (
-                                f"    时间: {schedule_time}, 格式: {format_type}\n"
-                            )
-
-                    message += "\n"
-
-                await matcher.send(message.strip())
-            else:
-                html_data = {
-                    "title": "所有群组的日报订阅情况",
-                    "current_time": current_time,
-                    "groups": [],
+                group_data = {
+                    "group_id": group_id,
+                    "group_name": group_name,
+                    "jobs": [],
                 }
 
-                for group_id, schedules in all_schedules.items():
-                    try:
-                        group_info = await bot.get_group_info(group_id=int(group_id))
-                        group_name = group_info.get("group_name", f"群 {group_id}")
-                    except Exception:
-                        group_name = f"群 {group_id}"
+                for news_type, schedule in schedules.items():
+                    source = get_news_source(news_type)
+                    news_description = source.description if source else "未知日报类型"
+                    schedule_time = schedule.get("schedule_time", "未知时间")
+                    format_type = schedule.get("format_type", "image")
 
-                    group_data = {
-                        "group_id": group_id,
-                        "group_name": group_name,
-                        "jobs": [],
-                    }
+                    group_data["jobs"].append(
+                        {
+                            "news_type": news_type,
+                            "news_description": news_description,
+                            "schedule_time": schedule_time,
+                            "format_type": format_type,
+                        }
+                    )
 
-                    for news_type, schedule in schedules.items():
-                        source = get_news_source(news_type)
-                        news_description = (
-                            source.description if source else "未知日报类型"
-                        )
-                        schedule_time = schedule.get("schedule_time", "未知时间")
-                        format_type = schedule.get("format_type", "image")
+                html_data["groups"].append(group_data)
 
-                        next_run = "未知"
-                        try:
-                            if schedule_time:
-                                hour, minute = schedule_time.split(":")
-                                now = datetime.datetime.now()
-                                next_datetime = now.replace(
-                                    hour=int(hour),
-                                    minute=int(minute),
-                                    second=0,
-                                    microsecond=0,
-                                )
-                                if next_datetime <= now:
-                                    next_datetime += datetime.timedelta(days=1)
-                                next_run = next_datetime.strftime("%Y-%m-%d %H:%M:%S")
-                        except Exception as e:
-                            logger.debug(f"计算下次运行时间失败: {e}")
+            md_text = f"# 📊 {html_data['title']}\n\n"
+            md_text += f"**查询时间**: {html_data['current_time']}\n\n"
 
-                        group_data["jobs"].append(
-                            {
-                                "news_type": news_type,
-                                "news_description": news_description,
-                                "schedule_time": schedule_time,
-                                "format_type": format_type,
-                                "next_run": next_run,
-                            }
-                        )
+            for group in html_data["groups"]:
+                md_text += f"## 🏠 {group['group_name']} ({group['group_id']})\n\n"
 
-                    html_data["groups"].append(group_data)
+                if not group["jobs"]:
+                    md_text += "💤 该群没有订阅任何日报\n\n"
+                else:
+                    for job in group["jobs"]:
+                        md_text += f"📰 **{job['news_type']}** - {job['news_description']}\n\n"
+                        md_text += f"⏰ **推送时间**: {job['schedule_time']} | 📱 **格式**: {job['format_type']}\n\n"
+                        md_text += "---\n\n"
 
-                md_text = f"# {html_data['title']}\n\n"
-                md_text += f"查询时间: {html_data['current_time']}\n\n"
-
+            if HAS_HTMLRENDER:
+                try:
+                    pic = await md_to_pic(md=md_text, css_path=CUSTOM_CSS_PATH)
+                    await matcher.send(MessageSegment.image(pic))
+                except Exception as e:
+                    logger.error(f"生成订阅情况图片失败: {e}，将使用文本模式")
+                    text_message = (
+                        f"【所有群组的日报订阅情况】\n查询时间: {html_data['current_time']}\n\n"
+                    )
+                    for group in html_data["groups"]:
+                        text_message += f"▶ {group['group_name']} ({group['group_id']})\n"
+                        if not group["jobs"]:
+                            text_message += "  该群没有订阅任何日报\n\n"
+                        else:
+                            for job in group["jobs"]:
+                                text_message += f"  • {job['news_type']} ({job['news_description']})\n"
+                                text_message += f"    订阅时间: {job['schedule_time']}\n"
+                                text_message += f"    格式: {job['format_type']}\n\n"
+                    await matcher.send(text_message.strip())
+            else:
+                logger.warning("htmlrender插件不可用，将使用文本模式显示订阅情况")
+                text_message = f"【所有群组的日报订阅情况】\n查询时间: {html_data['current_time']}\n\n"
                 for group in html_data["groups"]:
-                    md_text += f"## {group['group_name']} ({group['group_id']})\n\n"
-
+                    text_message += f"▶ {group['group_name']} ({group['group_id']})\n"
                     if not group["jobs"]:
-                        md_text += "该群没有订阅任何日报\n\n"
+                        text_message += "  该群没有订阅任何日报\n\n"
                     else:
                         for job in group["jobs"]:
-                            md_text += (
-                                f"### {job['news_type']} ({job['news_description']})\n"
-                            )
-                            md_text += f"- **订阅时间**: {job['schedule_time']}\n"
-                            md_text += f"- **下次推送**: {job['next_run']}\n"
-                            md_text += f"- **格式**: {job['format_type']}\n\n"
-
-                if HAS_HTMLRENDER:
-                    try:
-                        pic = await md_to_pic(md=md_text, css_path=CUSTOM_CSS_PATH)
-                        await matcher.send(MessageSegment.image(pic))
-                    except Exception as e:
-                        logger.error(f"生成订阅情况图片失败: {e}，将使用文本模式")
-                        await handle_daily_news_view(bot, event, matcher, res)
-                else:
-                    logger.warning("htmlrender插件不可用，将使用文本模式显示订阅情况")
-                    await handle_daily_news_view(bot, event, matcher, res)
+                            text_message += f"  • {job['news_type']} ({job['news_description']})\n"
+                            text_message += f"    订阅时间: {job['schedule_time']}\n"
+                            text_message += f"    格式: {job['format_type']}\n\n"
+                await matcher.send(text_message.strip())
 
             return
 
         if target_group:
-            from ..utils.storage import schedule_store
+            from ..utils.core import schedule_store
 
             schedules = schedule_store.get_group_schedules(target_group)
 
@@ -449,84 +397,73 @@ async def handle_daily_news_view(
                 schedule_time = schedule.get("schedule_time", "未知时间")
                 format_type = schedule.get("format_type", "image")
 
-                next_run = "未知"
-                try:
-                    if schedule_time:
-                        hour, minute = schedule_time.split(":")
-                        now = datetime.datetime.now()
-                        next_datetime = now.replace(
-                            hour=int(hour), minute=int(minute), second=0, microsecond=0
-                        )
-                        if next_datetime <= now:
-                            next_datetime += datetime.timedelta(days=1)
-                        next_run = next_datetime.strftime("%Y-%m-%d %H:%M:%S")
-                except Exception as e:
-                    logger.debug(f"计算下次运行时间失败: {e}")
-
                 jobs.append(
                     {
                         "news_type": news_type,
                         "news_description": news_description,
                         "schedule_time": schedule_time,
                         "format_type": format_type,
-                        "next_run": next_run,
                     }
                 )
 
-            if use_text:
-                message = (
-                    f"【{group_name} 的日报订阅情况】\n查询时间: {current_time}\n\n"
-                )
+            html_data = {
+                "title": f"{group_name} 的日报订阅情况",
+                "current_time": current_time,
+                "jobs": jobs,
+                "group_name": group_name,
+                "group_id": target_group,
+            }
 
-                if not jobs:
-                    message += "该群没有订阅任何日报"
-                else:
-                    for idx, job in enumerate(jobs, 1):
-                        message += (
-                            f"{idx}. {job['news_type']} ({job['news_description']})\n"
-                        )
-                        message += f"   - 订阅时间: {job['schedule_time']}\n"
-                        message += f"   - 下次推送: {job['next_run']}\n"
-                        message += f"   - 格式: {job['format_type']}\n\n"
+            md_text = f"# 📊 {html_data['title']}\n\n"
+            md_text += f"**查询时间**: {html_data['current_time']}\n\n"
 
-                await matcher.send(message.strip())
+            if not html_data["jobs"]:
+                md_text += "💤 该群没有订阅任何日报\n\n"
             else:
-                html_data = {
-                    "title": f"{group_name} 的日报订阅情况",
-                    "current_time": current_time,
-                    "jobs": jobs,
-                    "group_name": group_name,
-                    "group_id": target_group,
-                }
+                for idx, job in enumerate(html_data["jobs"], 1):
+                    md_text += f"## {idx}. 📰 {job['news_type']}\n\n"
+                    md_text += f"📝 **描述**: {job['news_description']}\n\n"
+                    md_text += (
+                        f"⏰ **推送时间**: {job['schedule_time']} | 📱 **格式**: {job['format_type']}\n\n"
+                    )
+                    md_text += "---\n\n"
 
-                md_text = f"# {html_data['title']}\n\n"
-                md_text += f"查询时间: {html_data['current_time']}\n\n"
-
+            if HAS_HTMLRENDER:
+                try:
+                    pic = await md_to_pic(md=md_text, css_path=CUSTOM_CSS_PATH)
+                    await matcher.send(MessageSegment.image(pic))
+                except Exception as e:
+                    logger.error(f"生成订阅情况图片失败: {e}，将使用文本模式")
+                    text_message = (
+                        f"【{group_name} 的日报订阅情况】\n查询时间: {html_data['current_time']}\n\n"
+                    )
+                    if not html_data["jobs"]:
+                        text_message += "该群没有订阅任何日报"
+                    else:
+                        for idx, job in enumerate(html_data["jobs"], 1):
+                            text_message += f"{idx}. {job['news_type']} ({job['news_description']})\n"
+                            text_message += f"   - 订阅时间: {job['schedule_time']}\n"
+                            text_message += f"   - 格式: {job['format_type']}\n\n"
+                    await matcher.send(text_message.strip())
+            else:
+                logger.warning("htmlrender插件不可用，将使用文本模式显示订阅情况")
+                text_message = (
+                    f"【{group_name} 的日报订阅情况】\n查询时间: {html_data['current_time']}\n\n"
+                )
                 if not html_data["jobs"]:
-                    md_text += "该群没有订阅任何日报\n\n"
+                    text_message += "该群没有订阅任何日报"
                 else:
                     for idx, job in enumerate(html_data["jobs"], 1):
-                        md_text += f"## {idx}. {job['news_type']} ({job['news_description']})\n"
-                        md_text += f"- **订阅时间**: {job['schedule_time']}\n"
-                        md_text += f"- **下次推送**: {job['next_run']}\n"
-                        md_text += f"- **格式**: {job['format_type']}\n\n"
-
-                if HAS_HTMLRENDER:
-                    try:
-                        pic = await md_to_pic(md=md_text, css_path=CUSTOM_CSS_PATH)
-                        await matcher.send(MessageSegment.image(pic))
-                    except Exception as e:
-                        logger.error(f"生成订阅情况图片失败: {e}，将使用文本模式")
-                        await handle_daily_news_view(bot, event, matcher, res)
-                else:
-                    logger.warning("htmlrender插件不可用，将使用文本模式显示订阅情况")
-                    await handle_daily_news_view(bot, event, matcher, res)
+                        text_message += f"{idx}. {job['news_type']} ({job['news_description']})\n"
+                        text_message += f"   - 订阅时间: {job['schedule_time']}\n"
+                        text_message += f"   - 格式: {job['format_type']}\n\n"
+                await matcher.send(text_message.strip())
 
             return
 
         if isinstance(event, GroupMessageEvent):
             group_id = event.group_id
-            from ..utils.storage import schedule_store
+            from ..utils.core import schedule_store
 
             schedules = schedule_store.get_group_schedules(group_id)
 
@@ -543,70 +480,53 @@ async def handle_daily_news_view(
                 schedule_time = schedule.get("schedule_time", "未知时间")
                 format_type = schedule.get("format_type", "image")
 
-                next_run = "未知"
-                try:
-                    if schedule_time:
-                        hour, minute = schedule_time.split(":")
-                        now = datetime.datetime.now()
-                        next_datetime = now.replace(
-                            hour=int(hour), minute=int(minute), second=0, microsecond=0
-                        )
-                        if next_datetime <= now:
-                            next_datetime += datetime.timedelta(days=1)
-                        next_run = next_datetime.strftime("%Y-%m-%d %H:%M:%S")
-                except Exception as e:
-                    logger.debug(f"计算下次运行时间失败: {e}")
-
                 jobs.append(
                     {
                         "news_type": news_type,
                         "news_description": news_description,
                         "schedule_time": schedule_time,
                         "format_type": format_type,
-                        "next_run": next_run,
                     }
                 )
 
-            if use_text:
-                message = (
-                    f"【{group_name} 的日报订阅情况】\n查询时间: {current_time}\n\n"
-                )
+            html_data = {
+                "title": f"{group_name} 的日报订阅情况",
+                "current_time": current_time,
+                "jobs": jobs,
+                "group_name": group_name,
+                "group_id": group_id,
+            }
 
-                if not jobs:
-                    message += "本群没有订阅任何日报"
-                else:
-                    for idx, job in enumerate(jobs, 1):
-                        message += (
-                            f"{idx}. {job['news_type']} ({job['news_description']})\n"
-                        )
-                        message += f"   - 订阅时间: {job['schedule_time']}\n"
-                        message += f"   - 下次推送: {job['next_run']}\n"
-                        message += f"   - 格式: {job['format_type']}\n\n"
+            md_text = f"# 📊 {html_data['title']}\n\n"
+            md_text += f"**查询时间**: {html_data['current_time']}\n\n"
 
-                await matcher.send(message.strip())
+            if not html_data["jobs"]:
+                md_text += "💤 本群没有订阅任何日报\n\n"
             else:
-                html_data = {
-                    "title": f"{group_name} 的日报订阅情况",
-                    "current_time": current_time,
-                    "jobs": jobs,
-                    "group_name": group_name,
-                    "group_id": group_id,
-                }
+                for idx, job in enumerate(html_data["jobs"], 1):
+                    md_text += f"## {idx}. 📰 {job['news_type']}\n\n"
+                    md_text += f"📝 **描述**: {job['news_description']}\n\n"
+                    md_text += (
+                        f"⏰ **推送时间**: {job['schedule_time']} | 📱 **格式**: {job['format_type']}\n\n"
+                    )
+                    md_text += "---\n\n"
 
-                md_text = f"# {html_data['title']}\n\n"
-                md_text += f"查询时间: {html_data['current_time']}\n\n"
-
-                if not html_data["jobs"]:
-                    md_text += "本群没有订阅任何日报\n\n"
-                else:
-                    for idx, job in enumerate(html_data["jobs"], 1):
-                        md_text += f"## {idx}. {job['news_type']} ({job['news_description']})\n"
-                        md_text += f"- **订阅时间**: {job['schedule_time']}\n"
-                        md_text += f"- **下次推送**: {job['next_run']}\n"
-                        md_text += f"- **格式**: {job['format_type']}\n\n"
-
+            try:
                 pic = await md_to_pic(md=md_text, css_path=CUSTOM_CSS_PATH)
                 await matcher.send(MessageSegment.image(pic))
+            except Exception as e:
+                logger.error(f"生成订阅情况图片失败: {e}，将使用文本模式")
+                text_message = (
+                    f"【{group_name} 的日报订阅情况】\n查询时间: {html_data['current_time']}\n\n"
+                )
+                if not html_data["jobs"]:
+                    text_message += "本群没有订阅任何日报"
+                else:
+                    for idx, job in enumerate(html_data["jobs"], 1):
+                        text_message += f"{idx}. {job['news_type']} ({job['news_description']})\n"
+                        text_message += f"   - 订阅时间: {job['schedule_time']}\n"
+                        text_message += f"   - 格式: {job['format_type']}\n\n"
+                await matcher.send(text_message.strip())
 
             return
 
@@ -614,60 +534,3 @@ async def handle_daily_news_view(
     except Exception as e:
         logger.error(f"查询订阅情况失败: {e}")
         await matcher.send(f"查询订阅情况失败: {e}")
-
-
-@daily_news_schedule.assign("修复")
-async def handle_daily_news_fix(
-    bot: Bot,
-    event: GroupMessageEvent | PrivateMessageEvent,
-    matcher: AlconnaMatcher,
-    res: CommandResult,
-):
-    """处理日报修复命令
-
-    Args:
-        bot: 机器人实例
-        event: 事件
-        matcher: 匹配器
-        res: 命令结果
-    """
-    is_superuser = await SUPERUSER(bot, event)
-    if not is_superuser:
-        await matcher.send("只有超级用户才能使用此命令")
-        return
-
-    arp = res.result
-
-    logger.debug(f"修复命令选项: {arp.options}")
-    logger.debug(f"修复命令子命令: {arp.subcommands}")
-
-    if "修复" in arp.subcommands:
-        fix_options = arp.subcommands["修复"].options
-        logger.debug(f"修复子命令选项: {fix_options}")
-        reset_all = "a" in fix_options or "all" in fix_options
-    else:
-        reset_all = "a" in arp.options or "all" in arp.options
-
-    await matcher.send("正在修复日报系统，请稍候...")
-
-    try:
-        from ..utils.storage import schedule_store
-        from nonebot_plugin_apscheduler import scheduler
-
-        for job in scheduler.get_jobs():
-            if job.id.startswith("daily_news_"):
-                try:
-                    scheduler.remove_job(job.id)
-                except Exception as e:
-                    logger.debug(f"移除任务失败: {e}")
-
-        if reset_all:
-            schedule_store.data = {}
-            schedule_store._save_data()
-            await matcher.send("已重置所有定时任务配置")
-        else:
-            await schedule_manager.init_jobs()
-            await matcher.send("已重新加载定时任务配置")
-    except Exception as e:
-        logger.error(f"修复日报系统失败: {e}")
-        await matcher.send(f"修复失败: {e}")

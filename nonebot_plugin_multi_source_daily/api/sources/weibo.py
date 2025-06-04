@@ -8,9 +8,7 @@ from .base import BaseNewsSource, register_news_source
 from .mixins import ImageRenderMixin, TextFormatMixin, NewsItemProcessorMixin
 
 
-class WeiboHotNewsSource(
-    BaseNewsSource, ImageRenderMixin, TextFormatMixin, NewsItemProcessorMixin
-):
+class WeiboHotNewsSource(BaseNewsSource, ImageRenderMixin, TextFormatMixin, NewsItemProcessorMixin):
     """微博热搜源"""
 
     def __init__(self):
@@ -19,7 +17,7 @@ class WeiboHotNewsSource(
             name="微博热搜",
             description="微博热搜榜热门话题",
             default_format="image",
-            aliases=["weibo","微博"],
+            aliases=["weibo", "微博"],
             formats=["image", "text"],
         )
 

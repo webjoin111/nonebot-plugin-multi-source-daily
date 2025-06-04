@@ -8,9 +8,7 @@ from .base import BaseNewsSource, register_news_source
 from .mixins import ImageRenderMixin, TextFormatMixin, NewsItemProcessorMixin
 
 
-class ZhihuNewsSource(
-    BaseNewsSource, ImageRenderMixin, TextFormatMixin, NewsItemProcessorMixin
-):
+class ZhihuNewsSource(BaseNewsSource, ImageRenderMixin, TextFormatMixin, NewsItemProcessorMixin):
     """知乎日报源"""
 
     def __init__(self):
@@ -54,9 +52,7 @@ class ZhihuNewsSource(
         )
 
 
-class ZhihuHotNewsSource(
-    BaseNewsSource, ImageRenderMixin, TextFormatMixin, NewsItemProcessorMixin
-):
+class ZhihuHotNewsSource(BaseNewsSource, ImageRenderMixin, TextFormatMixin, NewsItemProcessorMixin):
     """知乎热榜源"""
 
     def __init__(self):

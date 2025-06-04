@@ -72,9 +72,7 @@ class VVHanZhihuParser(ApiParser):
 
             news_data = NewsData(
                 title="知乎日报",
-                update_time=data.get(
-                    "update_time", datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                ),
+                update_time=data.get("update_time", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
                 source="知乎",
             )
 
@@ -211,9 +209,7 @@ class BinaryImageParser(ApiParser):
                             for i, item in enumerate(items, 1):
                                 if isinstance(item, dict):
                                     title = item.get("title", "")
-                                    description = item.get(
-                                        "desc", item.get("description", "")
-                                    )
+                                    description = item.get("desc", item.get("description", ""))
                                     if title:
                                         news_data.add_item(
                                             NewsItem(
@@ -227,9 +223,7 @@ class BinaryImageParser(ApiParser):
                             for i, item in enumerate(items, 1):
                                 if isinstance(item, dict):
                                     title = item.get("title", "")
-                                    description = item.get(
-                                        "desc", item.get("description", "")
-                                    )
+                                    description = item.get("desc", item.get("description", ""))
                                     if title:
                                         news_data.add_item(
                                             NewsItem(
@@ -240,11 +234,7 @@ class BinaryImageParser(ApiParser):
                                         )
                         else:
                             for i, (key, value) in enumerate(data.items(), 1):
-                                if (
-                                    isinstance(value, str)
-                                    and key != "date"
-                                    and key != "time"
-                                ):
+                                if isinstance(value, str) and key != "date" and key != "time":
                                     news_data.add_item(
                                         NewsItem(
                                             title=value,
@@ -294,14 +284,10 @@ class BinaryImageParser(ApiParser):
 
                 try:
                     news_data.binary_data = response.content
-                    logger.debug(
-                        f"成功获取图片数据，大小: {len(response.content)} 字节"
-                    )
+                    logger.debug(f"成功获取图片数据，大小: {len(response.content)} 字节")
 
                     if len(response.content) < 100:
-                        logger.warning(
-                            f"图片数据可能无效，大小仅为 {len(response.content)} 字节"
-                        )
+                        logger.warning(f"图片数据可能无效，大小仅为 {len(response.content)} 字节")
                 except Exception as e:
                     logger.error(f"处理图片数据时出错: {e}")
                     raise APIResponseParseException(
@@ -352,7 +338,6 @@ class Viki60sJsonParser(ApiParser):
                 source="60s-api.viki.moe",
             )
 
-            # 获取新闻列表
             news_list = api_data.get("news", [])
             if isinstance(news_list, list):
                 for i, news_item in enumerate(news_list, 1):
@@ -402,22 +387,7 @@ class HistoryTodayParser(ApiParser):
                 if isinstance(items, list):
                     if not items:
                         logger.warning("历史上的今天API返回的数据列表为空")
-                        try:
-                            import json
-                            import os
-
-                            backup_file = os.path.join("assets", "history_data.json")
-                            if os.path.exists(backup_file):
-                                with open(backup_file, "r", encoding="utf-8") as f:
-                                    backup_data = json.load(f)
-                                    if (
-                                        isinstance(backup_data, dict)
-                                        and "data" in backup_data
-                                    ):
-                                        items = backup_data["data"]
-                                        logger.info(f"使用备用数据，共 {len(items)} 条")
-                        except Exception as backup_e:
-                            logger.error(f"加载备用数据失败: {backup_e}")
+                        items = []
 
                     for i, item in enumerate(items[:20], 1):
                         if isinstance(item, dict):
@@ -434,9 +404,7 @@ class HistoryTodayParser(ApiParser):
                                     NewsItem(
                                         title=full_title,
                                         index=i,
-                                        description=description
-                                        if description != title
-                                        else "",
+                                        description=description if description != title else "",
                                     )
                                 )
 
@@ -539,6 +507,160 @@ class WeiboHotParser(ApiParser):
             )
 
 
+class WeiboHotSearchParser(ApiParser):
+    """微博热搜搜索解析器 - 处理weibo.com/ajax/side/hotSearch格式"""
+
+    async def parse(self, response: httpx.Response) -> NewsData:
+        """解析API响应"""
+        try:
+            data = response.json()
+
+            news_data = NewsData(
+                title="微博热搜",
+                update_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                source="微博",
+            )
+
+            # 处理 {"ok": 1, "data": {"hotgov": [...], "realtime": [...]}} 格式
+            if isinstance(data, dict) and data.get("ok") == 1:
+                data_content = data.get("data", {})
+
+                # 优先处理realtime数据
+                realtime_items = data_content.get("realtime", [])
+                if realtime_items:
+                    for i, item in enumerate(realtime_items, 1):
+                        if isinstance(item, dict):
+                            # 提取基本信息
+                            word = item.get("word", "")
+                            note = item.get("note", "")
+                            num = item.get("num", 0)
+
+                            # 构建标题，优先使用note，回退到word
+                            title = note if note else word
+                            if not title:
+                                continue
+
+                            # 构建微博搜索URL
+                            search_word = word if word else note
+                            url = f"https://s.weibo.com/weibo?q={search_word}" if search_word else ""
+
+                            # 格式化热度值
+                            hot_value = ""
+                            if num:
+                                if num >= 10000:
+                                    hot_value = f"{num//10000}万"
+                                else:
+                                    hot_value = str(num)
+
+                            # 获取标签信息，优先使用label_name
+                            label_name = item.get("label_name", "")
+                            icon_desc = item.get("icon_desc", "")
+                            small_icon_desc = item.get("small_icon_desc", "")
+                            flag_desc = item.get("flag_desc", "")
+
+                            # 构建完整标题（包含标签）
+                            full_title = title
+
+                            # 优先级：label_name > icon_desc > small_icon_desc > flag_desc
+                            tag_text = ""
+                            if label_name:
+                                tag_text = label_name
+                            elif icon_desc:
+                                tag_text = icon_desc
+                            elif small_icon_desc:
+                                tag_text = small_icon_desc
+                            elif flag_desc:
+                                tag_text = flag_desc
+
+                            # 添加标签到标题
+                            if tag_text:
+                                full_title = f"[{tag_text}] {title}"
+
+                            # 获取话题标签
+                            topic_flag = item.get("topic_flag", 0)
+                            if topic_flag == 1 and not tag_text:
+                                # 只有在没有其他标签时才使用话题格式
+                                full_title = f"#{title}#"
+
+                            news_data.add_item(
+                                NewsItem(
+                                    title=full_title,
+                                    url=url,
+                                    index=i,
+                                    hot=hot_value,
+                                    description=f"热度: {hot_value}" if hot_value else "",
+                                )
+                            )
+
+            return news_data
+        except Exception as e:
+            logger.error(f"微博热搜搜索解析器解析失败: {e}")
+            raise APIResponseParseException(
+                message=f"微博热搜搜索解析器解析失败: {e}",
+                parser="weibo_hot_search",
+            )
+
+
+class MoyuJsonParser(ApiParser):
+    """摸鱼日历JSON解析器"""
+
+    async def parse(self, response: httpx.Response) -> NewsData:
+        """解析API响应"""
+        try:
+            data = response.json()
+            logger.debug(f"摸鱼日历API响应: {data}")
+
+            if not isinstance(data, dict) or data.get("code") != 200:
+                raise APIResponseParseException(
+                    message="API响应格式错误或状态码不正确",
+                    parser="moyu_json",
+                )
+
+            image_url = data.get("data", "")
+            if not image_url:
+                raise APIResponseParseException(
+                    message="未获取到摸鱼日历图片URL",
+                    parser="moyu_json",
+                )
+
+            news_data = NewsData(
+                title="摸鱼人日历",
+                update_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                source="摸鱼日历",
+            )
+
+            news_data.add_item(
+                NewsItem(
+                    title="摸鱼人日历",
+                    url=image_url,
+                    index=1,
+                    image_url=image_url,
+                )
+            )
+
+            try:
+                import httpx
+
+                async with httpx.AsyncClient() as client:
+                    image_response = await client.get(image_url)
+                    if image_response.status_code == 200:
+                        news_data.binary_data = image_response.content
+                        logger.debug(f"成功获取摸鱼日历图片数据，大小: {len(image_response.content)} 字节")
+                    else:
+                        logger.warning(f"获取摸鱼日历图片失败，状态码: {image_response.status_code}")
+            except Exception as img_e:
+                logger.warning(f"获取摸鱼日历图片数据时出错: {img_e}")
+
+            logger.info("摸鱼日历JSON解析成功")
+            return news_data
+        except Exception as e:
+            logger.error(f"摸鱼日历JSON解析器解析失败: {e}")
+            raise APIResponseParseException(
+                message=f"摸鱼日历JSON解析器解析失败: {e}",
+                parser="moyu_json",
+            )
+
+
 PARSERS: dict[str, type[ApiParser]] = {
     "default": DefaultParser,
     "vvhan": VVHanZhihuParser,
@@ -549,6 +671,8 @@ PARSERS: dict[str, type[ApiParser]] = {
     "history_today": HistoryTodayParser,
     "zhihu_hot": ZhihuHotParser,
     "weibo_hot": WeiboHotParser,
+    "weibo_hot_search": WeiboHotSearchParser,
+    "moyu_json": MoyuJsonParser,
 }
 
 

@@ -5,10 +5,12 @@ from nonebot.adapters.onebot.v11 import (
     MessageEvent,
     MessageSegment,
 )
+from nonebot.plugin import on_message
 from nonebot.rule import Rule
-
+from ..api.handlers import get_news_handler
+from ..utils.screenshot import capture_webpage_screenshot
 require("nonebot_plugin_alconna")
-from nonebot_plugin_alconna import (
+from nonebot_plugin_alconna import (  # noqa: E402
     Alconna,
     AlconnaMatcher,
     Args,
@@ -17,8 +19,7 @@ from nonebot_plugin_alconna import (
     on_alconna,
 )
 
-from ..api.handlers import get_news_handler
-from ..utils.screenshot import capture_webpage_screenshot
+
 
 recent_news_types: Dict[str, Dict[str, str]] = {}
 
@@ -59,7 +60,6 @@ def reply_with_number_rule() -> Rule:
     return Rule(_rule)
 
 
-from nonebot.plugin import on_message
 
 quote_detail = on_message(rule=reply_with_number_rule(), priority=5, block=True)
 
@@ -83,19 +83,11 @@ async def extract_news_type_from_reply(event: MessageEvent) -> str | None:
     text = reply_msg.extract_plain_text()
     logger.debug(f"回复消息文本: {text}")
 
-    detail_display_names = {"IT之家": "IT之家", "知乎日报": "知乎日报"}
-
-    for display_name, handler_name in detail_display_names.items():
-        if display_name in text:
-            logger.debug(f"从文本中识别到显示名称: {display_name}")
-            logger.debug(f"映射到日报类型: {handler_name}")
-            return handler_name
-
     type_keywords = {
         "IT之家": ["it之家", "it", "ithome", "IT之家", "IT"],
         "知乎日报": ["知乎日报", "zhihu"],
         "知乎热榜": ["知乎热榜", "zhihu_hot"],
-        "微博热搜": ["微博热搜", "weibo", "微博"],
+        "微博热搜": ["微博热搜", "weibo", "微博", "热搜"],
         "历史上的今天": ["历史上的今天", "历史", "history", "HISTORY"],
     }
 
@@ -115,6 +107,8 @@ async def extract_news_type_from_reply(event: MessageEvent) -> str | None:
                 return "IT之家"
             elif "zhihu" in url_lower or "知乎" in url_lower:
                 return "知乎日报"
+            elif "weibo" in url_lower or "微博" in url_lower:
+                return "微博热搜"
             elif "history" in url_lower or "历史" in url_lower:
                 return "历史上的今天"
 
@@ -153,7 +147,15 @@ async def handle_news_detail(
 
     await matcher.send(f"正在获取 {news_item.title} 的网页截图，请稍候...")
 
-    pic = await capture_webpage_screenshot(url=news_item.url, site_type=handler.name)
+    pic = None
+    if hasattr(handler, "capture_news_screenshot"):
+        try:
+            pic = await handler.capture_news_screenshot(news_item.url)
+        except Exception as e:
+            logger.warning(f"使用处理器截图失败: {e}，回退到通用截图")
+
+    if not pic:
+        pic = await capture_webpage_screenshot(url=news_item.url, site_type=handler.name)
 
     if not pic:
         await matcher.send(f"获取网页截图失败，您可以直接访问: {news_item.url}")
@@ -192,7 +194,15 @@ async def handle_quote_detail(event: MessageEvent):
 
     await quote_detail.send(f"正在获取 {news_item.title} 的网页截图，请稍候...")
 
-    pic = await capture_webpage_screenshot(url=news_item.url, site_type=handler.name)
+    pic = None
+    if hasattr(handler, "capture_news_screenshot"):
+        try:
+            pic = await handler.capture_news_screenshot(news_item.url)
+        except Exception as e:
+            logger.warning(f"使用处理器截图失败: {e}，回退到通用截图")
+
+    if not pic:
+        pic = await capture_webpage_screenshot(url=news_item.url, site_type=handler.name)
 
     if not pic:
         await quote_detail.send(f"获取网页截图失败，您可以直接访问: {news_item.url}")

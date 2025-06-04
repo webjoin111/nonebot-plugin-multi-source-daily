@@ -87,9 +87,7 @@ class ApiSource:
 class NewsSourceProtocol(Protocol):
     """日报源协议"""
 
-    async def fetch(
-        self, format_type: str = "image", force_refresh: bool = False
-    ) -> Message:
+    async def fetch(self, format_type: str = "image", force_refresh: bool = False) -> Message:
         """获取日报内容"""
         ...
 
@@ -175,9 +173,7 @@ class ApiStatus:
         return {
             "url": self.url,
             "enabled": self.enabled,
-            "last_success": self.last_success.isoformat()
-            if self.last_success
-            else None,
+            "last_success": self.last_success.isoformat() if self.last_success else None,
             "failure_count": self.failure_count,
             "priority": self.priority,
             "parser": self.parser,

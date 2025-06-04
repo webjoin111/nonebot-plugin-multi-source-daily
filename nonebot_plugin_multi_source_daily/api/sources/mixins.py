@@ -31,9 +31,7 @@ class ImageRenderMixin(ABC):
                 logger.error(f"使用二进制图片数据失败: {e}，回退到渲染文本")
 
         if max_items and len(news_data.items) > max_items:
-            logger.info(
-                f"{self.name}条目过多，限制为{max_items}条 (原有{len(news_data.items)}条)"
-            )
+            logger.info(f"{self.name}条目过多，限制为{max_items}条 (原有{len(news_data.items)}条)")
             news_data.items = news_data.items[:max_items]
 
         logger.debug("未检测到二进制图片数据或使用失败，将文本渲染为图片")
@@ -75,9 +73,7 @@ class TextFormatMixin(ABC):
     ) -> Message:
         """统一的文本格式化逻辑"""
         if max_items and len(news_data.items) > max_items:
-            logger.info(
-                f"{self.name}文本格式条目过多，限制为{max_items}条 (原有{len(news_data.items)}条)"
-            )
+            logger.info(f"{self.name}文本格式条目过多，限制为{max_items}条 (原有{len(news_data.items)}条)")
             news_data.items = news_data.items[:max_items]
 
         message = Message(f"【{title}】\n\n")
@@ -114,9 +110,7 @@ class BinaryDataMixin(ABC):
 
         try:
             if len(news_data.binary_data) > 0:
-                logger.debug(
-                    f"使用二进制图片数据，大小: {len(news_data.binary_data)} 字节"
-                )
+                logger.debug(f"使用二进制图片数据，大小: {len(news_data.binary_data)} 字节")
                 return Message(MessageSegment.image(news_data.binary_data))
             else:
                 logger.warning("二进制图片数据为空")
@@ -139,9 +133,7 @@ class NewsItemProcessorMixin(ABC):
     ) -> NewsData:
         """处理新闻条目"""
         if max_items and len(news_data.items) > max_items:
-            logger.info(
-                f"{self.name}条目过多，限制为{max_items}条 (原有{len(news_data.items)}条)"
-            )
+            logger.info(f"{self.name}条目过多，限制为{max_items}条 (原有{len(news_data.items)}条)")
             news_data.items = news_data.items[:max_items]
 
         for i, item in enumerate(news_data.items):
@@ -157,9 +149,7 @@ class NewsItemProcessorMixin(ABC):
 class ConfigurableFormatMixin(ABC):
     """可配置格式混入类"""
 
-    def determine_api_format(
-        self, requested_format: str, global_default: str
-    ) -> dict[str, Any]:
+    def determine_api_format(self, requested_format: str, global_default: str) -> dict[str, Any]:
         """根据请求格式和全局配置确定API请求参数"""
         params = {}
 
@@ -193,11 +183,7 @@ class ConfigurableFormatMixin(ABC):
                 json_params = {"format": "json"}
                 news_data = await api_manager.fetch_data(self.name, json_params, api_index)
 
-                if (
-                    news_data
-                    and hasattr(news_data, "items")
-                    and len(news_data.items) > 0
-                ):
+                if news_data and hasattr(news_data, "items") and len(news_data.items) > 0:
                     logger.debug("成功获取JSON数据，将用于渲染图片")
                     return news_data
 
@@ -269,9 +255,7 @@ class ImageSizeOptimizationMixin(ABC):
                         logger.debug(f"成功渲染图片，大小: {size_mb:.2f}MB")
                         return Message(MessageSegment.image(pic))
                     else:
-                        logger.warning(
-                            f"图片过大: {size_mb:.2f}MB，尝试减少条目到{step_items}条"
-                        )
+                        logger.warning(f"图片过大: {size_mb:.2f}MB，尝试减少条目到{step_items}条")
                         continue
 
             except Exception as e:

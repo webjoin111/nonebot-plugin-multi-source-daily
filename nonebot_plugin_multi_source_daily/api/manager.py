@@ -110,9 +110,7 @@ class ApiManager:
             "failure_count": api_source.failure_count,
         }
 
-    def register_api_sources(
-        self, news_type: str, api_sources: list[ApiSource]
-    ) -> None:
+    def register_api_sources(self, news_type: str, api_sources: list[ApiSource]) -> None:
         """注册多个API源"""
         for api_source in api_sources:
             self.register_api_source(news_type, api_source)
@@ -235,9 +233,7 @@ class ApiManager:
 
         return sources[0]
 
-    async def fetch_data(
-        self, news_type: str, extra_params: dict = None, api_index: int = None
-    ) -> NewsData:
+    async def fetch_data(self, news_type: str, extra_params: dict = None, api_index: int = None) -> NewsData:
         """获取数据
 
         Args:
@@ -299,9 +295,7 @@ class ApiManager:
 
                 if failover_enabled:
                     logger.warning(f"API源 {source.url} 响应解析失败，尝试其他API源")
-                    return await self._try_failover_sources(
-                        news_type, source.url, extra_params
-                    )
+                    return await self._try_failover_sources(news_type, source.url, extra_params)
 
                 raise APIResponseParseException(
                     message=f"API响应解析失败: {e}",
@@ -314,9 +308,7 @@ class ApiManager:
 
             if failover_enabled:
                 logger.warning(f"API源 {source.url} 请求失败，尝试其他API源")
-                return await self._try_failover_sources(
-                    news_type, source.url, extra_params
-                )
+                return await self._try_failover_sources(news_type, source.url, extra_params)
             else:
                 logger.warning("故障转移已禁用，不尝试其他API源")
                 raise
@@ -326,9 +318,7 @@ class ApiManager:
 
             if failover_enabled:
                 logger.warning(f"API源 {source.url} 发生未知错误，尝试其他API源")
-                return await self._try_failover_sources(
-                    news_type, source.url, extra_params
-                )
+                return await self._try_failover_sources(news_type, source.url, extra_params)
             else:
                 raise
 
@@ -342,9 +332,7 @@ class ApiManager:
             failed_url: 失败的API源URL
             extra_params: 额外的请求参数
         """
-        other_sources = [
-            s for s in self.get_enabled_api_sources(news_type) if s.url != failed_url
-        ]
+        other_sources = [s for s in self.get_enabled_api_sources(news_type) if s.url != failed_url]
 
         if not other_sources:
             logger.error(f"没有可用的备用API源，日报类型: {news_type}")
@@ -356,9 +344,7 @@ class ApiManager:
         for other_source in other_sources:
             try:
                 other_parser = get_parser(other_source.parser)
-                logger.info(
-                    f"尝试备用API源: {other_source.url}, 优先级: {other_source.priority}"
-                )
+                logger.info(f"尝试备用API源: {other_source.url}, 优先级: {other_source.priority}")
 
                 url = other_source.url
                 params = {}
@@ -380,16 +366,12 @@ class ApiManager:
                     news_data = await other_parser.parse(other_response)
 
                     self.update_api_source_status(news_type, other_source.url, True)
-                    logger.info(
-                        f"成功从备用API源 {other_source.url} 获取 {news_type} 日报数据"
-                    )
+                    logger.info(f"成功从备用API源 {other_source.url} 获取 {news_type} 日报数据")
 
                     return news_data
                 except Exception as parse_e:
                     self.update_api_source_status(news_type, other_source.url, False)
-                    logger.error(
-                        f"备用API源 {other_source.url} 响应解析失败: {parse_e}"
-                    )
+                    logger.error(f"备用API源 {other_source.url} 响应解析失败: {parse_e}")
             except Exception as other_e:
                 self.update_api_source_status(news_type, other_source.url, False)
                 logger.error(f"备用API源 {other_source.url} 请求失败: {other_e}")
@@ -431,16 +413,18 @@ api_manager = ApiManager()
 
 
 def init_api_sources():
-    """从配置中初始化API源"""
-    api_manager.register_api_sources("60秒", config.daily_news_60s_apis)
+    """初始化API源"""
+    from ..config import DefaultApiSources
 
-    api_manager.register_api_sources("知乎日报", config.daily_news_zhihu_apis)
+    api_manager.register_api_sources("60秒", DefaultApiSources.DAILY_NEWS_60S_APIS)
 
-    api_manager.register_api_sources("知乎热榜", config.daily_news_zhihu_hot_apis)
+    api_manager.register_api_sources("知乎日报", DefaultApiSources.DAILY_NEWS_ZHIHU_APIS)
 
-    api_manager.register_api_sources("微博热搜", config.daily_news_weibo_hot_apis)
+    api_manager.register_api_sources("知乎热榜", DefaultApiSources.DAILY_NEWS_ZHIHU_HOT_APIS)
 
-    api_manager.register_api_sources("摸鱼日历", config.daily_news_moyu_apis)
+    api_manager.register_api_sources("微博热搜", DefaultApiSources.DAILY_NEWS_WEIBO_HOT_APIS)
+
+    api_manager.register_api_sources("摸鱼日历", DefaultApiSources.DAILY_NEWS_MOYU_APIS)
 
     api_manager.register_api_sources("IT之家", config.daily_news_ithome_apis)
 

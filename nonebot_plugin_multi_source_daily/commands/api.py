@@ -20,6 +20,7 @@ from nonebot_plugin_alconna import (
 if HAS_HTMLRENDER:
     from nonebot_plugin_htmlrender import md_to_pic
 
+
 from ..api import api_manager
 from ..utils import get_current_time
 
@@ -109,67 +110,104 @@ async def handle_api_list(matcher: AlconnaMatcher, use_text: bool = False):
         message = f"【日报API源状态】\n查询时间: {get_current_time()}\n\n"
 
         for news_type, status in api_status.items():
-            message += f"▶ {news_type} 日报:\n"
+            message += f"📰 {news_type} 日报\n"
+            message += "=" * 30 + "\n"
 
-            for i, source in enumerate(status["sources"], 1):
-                message += f"  {i}. {source['url']}\n"
-                message += f"     - 状态: {'启用' if source['enabled'] else '禁用'}\n"
-                message += f"     - 优先级: {source['priority']}\n"
-                message += f"     - 解析器: {source['parser']}\n"
+            sources = status["sources"]
+            for row_start in range(0, len(sources), 4):
+                row_sources = sources[row_start : row_start + 4]
 
-                if source["last_success"] > 0:
-                    import time
+                line1 = ""
+                for i, source in enumerate(row_sources, row_start + 1):
+                    url_display = source["url"]
+                    if len(url_display) > 15:
+                        url_display = url_display[:12] + "..."
+                    line1 += f"🔗{i:2d} {url_display:<18}"
+                message += line1.rstrip() + "\n"
 
-                    last_success_time = time.strftime(
-                        "%Y-%m-%d %H:%M:%S",
-                        time.localtime(source["last_success"]),
-                    )
-                    message += f"     - 上次成功: {last_success_time}\n"
-                else:
-                    message += "     - 上次成功: 从未\n"
+                line2 = ""
+                for source in row_sources:
+                    status_icon = "✅" if source["enabled"] else "❌"
+                    status_text = f"{status_icon} 优先级:{source['priority']}"
+                    line2 += f"{status_text:<22}"
+                message += line2.rstrip() + "\n"
 
-                message += f"     - 失败次数: {source['failure_count']}\n"
+                line3 = ""
+                for source in row_sources:
+                    if source["last_success"] > 0:
+                        import time
+
+                        last_success_time = time.strftime(
+                            "%m-%d %H:%M",
+                            time.localtime(source["last_success"]),
+                        )
+                        success_text = f"成功:{last_success_time}"
+                    else:
+                        success_text = "成功:从未"
+
+                    fail_icon = "⚠️" if source["failure_count"] > 0 else "✅"
+                    fail_text = f"失败:{fail_icon}{source['failure_count']}"
+                    combined_text = f"{success_text} {fail_text}"
+                    line3 += f"{combined_text:<22}"
+                message += line3.rstrip() + "\n"
+
+                message += "\n"
 
             message += "\n"
 
         await matcher.send(message.strip())
     else:
-        md_text = "# 日报API源状态\n\n"
-        md_text += f"查询时间: {get_current_time()}\n\n"
+        md_text = "# 📊 日报API源状态\n\n"
+        md_text += f"**查询时间**: {get_current_time()}\n\n"
 
         for news_type, status in api_status.items():
-            md_text += f"## {news_type} 日报\n\n"
+            md_text += f"## 📰 {news_type} 日报\n\n"
 
-            for i, source in enumerate(status["sources"], 1):
-                md_text += f"### {i}. {source['url']}\n"
-                md_text += f"- **状态**: {'启用' if source['enabled'] else '禁用'}\n"
-                md_text += f"- **优先级**: {source['priority']}\n"
-                md_text += f"- **解析器**: {source['parser']}\n"
+            sources = status["sources"]
+            for row_start in range(0, len(sources), 4):
+                row_sources = sources[row_start : row_start + 4]
 
-                if source["last_success"] > 0:
-                    import time
+                md_text += "| API源 | 状态 & 优先级 | 成功时间 & 失败次数 |\n"
+                md_text += "|-------|---------------|--------------------|\n"
 
-                    last_success_time = time.strftime(
-                        "%Y-%m-%d %H:%M:%S",
-                        time.localtime(source["last_success"]),
-                    )
-                    md_text += f"- **上次成功**: {last_success_time}\n"
-                else:
-                    md_text += "- **上次成功**: 从未\n"
+                for i, source in enumerate(row_sources, row_start + 1):
+                    url_display = source["url"]
+                    if len(url_display) > 25:
+                        url_display = url_display[:22] + "..."
 
-                md_text += f"- **失败次数**: {source['failure_count']}\n\n"
+                    status_emoji = "✅" if source["enabled"] else "❌"
+                    status_priority = f"{status_emoji} 优先级:{source['priority']}"
+
+                    if source["last_success"] > 0:
+                        import time
+
+                        last_success_time = time.strftime(
+                            "%m-%d %H:%M",
+                            time.localtime(source["last_success"]),
+                        )
+                        success_text = f"成功:{last_success_time}"
+                    else:
+                        success_text = "成功:从未"
+
+                    fail_icon = "⚠️" if source["failure_count"] > 0 else "✅"
+                    fail_text = f"失败:{fail_icon}{source['failure_count']}"
+                    success_fail = f"{success_text}<br>{fail_text}"
+
+                    md_text += f"| 🔗{i} {url_display} | {status_priority} | {success_fail} |\n"
+
+                md_text += "\n"
 
         try:
-            pic = await md_to_pic(md=md_text)
+            from ..commands.schedule import CUSTOM_CSS_PATH
+
+            pic = await md_to_pic(md=md_text, css_path=CUSTOM_CSS_PATH)
             await matcher.send(MessageSegment.image(pic))
         except Exception as e:
             logger.error(f"生成API源状态图片失败: {e}，将使用文本模式")
             await handle_api_list(matcher, use_text=True)
 
 
-async def handle_api_toggle(
-    matcher: AlconnaMatcher, news_type: str, index: int, enable: bool = True
-):
+async def handle_api_toggle(matcher: AlconnaMatcher, news_type: str, index: int, enable: bool = True):
     """处理API源启用/禁用"""
     sources = api_manager.get_api_sources(news_type)
     if not sources:
@@ -191,9 +229,7 @@ async def handle_api_toggle(
     await matcher.send(f"已{action} {news_type} 日报的第 {index} 个API源: {source.url}")
 
 
-async def handle_api_reset(
-    matcher: AlconnaMatcher, news_type: str = None, reset_all: bool = False
-):
+async def handle_api_reset(matcher: AlconnaMatcher, news_type: str = None, reset_all: bool = False):
     """处理API源重置"""
     if reset_all or (news_type and news_type.lower() == "all"):
         count = api_manager.reset_all_api_sources()

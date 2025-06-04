@@ -4,9 +4,12 @@ from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
     PrivateMessageEvent,
 )
+from ..api import get_news_source, news_sources
+from ..config import Config
+from ..utils import generate_news_type_error
 
 require("nonebot_plugin_alconna")
-from nonebot_plugin_alconna import (
+from nonebot_plugin_alconna import (  # noqa: E402
     Alconna,
     AlconnaMatcher,
     Args,
@@ -16,9 +19,7 @@ from nonebot_plugin_alconna import (
     on_alconna,
 )
 
-from ..api import get_news_source, news_sources
-from ..config import Config
-from ..utils import generate_news_type_error
+
 
 daily_news = on_alconna(
     Alconna(

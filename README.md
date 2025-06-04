@@ -71,6 +71,10 @@ DAILY_NEWS_AUTO_FAILOVER=true
 
 # 默认日报展示格式，可选值：image、text，默认为image
 DAILY_NEWS_DEFAULT_FORMAT=image
+
+# 微博Cookie，用于获取微博详情内容
+WEIBO_COOKIE="" 
+
 ```
 
 ## 🚀 功能列表
@@ -82,9 +86,9 @@ DAILY_NEWS_DEFAULT_FORMAT=image
 | 60秒 | 60s | 2 | ❌ |
 | 知乎日报 | - | 1 | ✅ |
 | 知乎热榜 | - | 1 | ❌ |
-| 微博热搜 | weibo、微博 | 1 | ❌ |
+| 微博热搜 | weibo、微博 | 2 | ✅ |
 | IT之家 | it之家、it、IT | 1 | ✅ |
-| 摸鱼日历 | 摸鱼、moyu | 1 | ❌ |
+| 摸鱼日历 | 摸鱼、moyu | 3 | ❌ |
 | 历史上的今天 | 历史、today | 1 | ❌ |
 
 ## 📸 日报示例
@@ -144,27 +148,31 @@ DAILY_NEWS_DEFAULT_FORMAT=image
 ### 基础命令
 
 ```
-日报 [类型] [-f 格式] [-a API源序号]
+日报 [类型] [-f 格式] [--force] [-a API索引]
   - 获取指定类型的日报信息
   - 可选格式: image(图片), text(文字)
-  - -a 参数可指定使用特定的API源
+  - --force 强制刷新，不使用缓存
+  - -a 参数可指定使用特定的API源索引
   - 例如: 日报 60s -f text
-  - 例如: 日报 知乎热榜
-  - 例如: 日报 微博热搜 -f text
+  - 例如: 日报 知乎热榜 --force
+  - 例如: 日报 微博热搜 -a 2
   - 例如: 日报 历史上的今天
 
 日报详情 [类型] [数字]
   - 获取指定日报类型中特定序号新闻的网页截图
+  - 支持微博热搜网页截图功能
   - 例如: 日报详情 ithome 3
+  - 例如: 日报详情 微博热搜 1
   - 仅对有网页链接的日报类型有效
 
 [数字]
   - 回复日报图片并发送数字，获取对应序号新闻的网页截图
   - 例如: 回复IT之家日报图片 + 5
+  - 例如: 回复微博热搜日报图片 + 1
   - 仅对有网页链接的日报类型有效
 
 日报列表
-  - 显示所有支持的日报类型
+  - 显示所有支持的日报类型及其详细信息
 ```
 
 ### 定时日报命令
@@ -183,15 +191,22 @@ DAILY_NEWS_DEFAULT_FORMAT=image
   - 取消本群或指定群的定时日报(仅限超级用户)
   - 例如: 定时日报 取消 60秒 -g 123456
 
-定时日报 查看 [-g 群号] [-all] [-t]
+定时日报 查看 [-g 群号] [-all]
   - 查看当前群的日报订阅情况
   - -g 和 -all 参数仅限超级用户使用
-  - -t 使用文本方式显示，默认为图片
-  - 例如: 定时日报 查看 -all -t
+  - 默认使用图片方式显示
+  - 例如: 定时日报 查看 -all
+```
 
-定时日报 修复 [-a]
-  - 修复日报系统，重新加载定时任务配置
-  - -a 参数将重置所有定时任务配置
+### 缓存管理命令（仅限超级用户）
+
+```
+日报缓存 [reset|重置]
+  - 查看或重置日报缓存
+  - 不带参数时显示缓存状态
+  - 使用reset或重置参数重置所有缓存
+  - 例如: 日报缓存
+  - 例如: 日报缓存 reset
 ```
 
 ### API源管理命令（仅限超级用户）
@@ -219,46 +234,8 @@ DAILY_NEWS_DEFAULT_FORMAT=image
   - 当所有日报来源均不可用时使用
 ```
 
-## 📝 API源配置
 
-本插件默认配置了多个API源，如需自定义API源，可以在全局配置文件中添加以下配置：
 
-```python
-# 60秒看世界API源
-DAILY_NEWS_60S_APIS=[
-    {"url": "https://api.southerly.top/api/60s", "priority": 2, "parser": "binary_image"}
-]
-
-# 知乎日报API源
-DAILY_NEWS_ZHIHU_APIS=[
-    {"url": "https://api.vvhan.com/api/hotlist/zhihuDay", "priority": 1, "parser": "vvhan"}
-]
-
-# 知乎热榜API源
-DAILY_NEWS_ZHIHU_HOT_APIS=[
-    {"url": "https://60s-api.viki.moe/v2/zhihu", "priority": 1, "parser": "zhihu_hot"}
-]
-
-# 微博热搜API源
-DAILY_NEWS_WEIBO_HOT_APIS=[
-    {"url": "https://60s-api.viki.moe/v2/weibo", "priority": 1, "parser": "weibo_hot"}
-]
-
-# 摸鱼日报API源
-DAILY_NEWS_MOYU_APIS=[
-    {"url": "https://api.vvhan.com/api/moyu", "priority": 1, "parser": "binary_image"}
-]
-
-# IT之家日报API源
-DAILY_NEWS_ITHOME_APIS=[
-    {"url": "https://www.ithome.com/rss/", "priority": 1, "parser": "rss"}
-]
-
-# 历史上的今天API源
-DAILY_NEWS_HISTORY_APIS=[
-    {"url": "https://api.03c3.cn/api/history", "priority": 1, "parser": "history_today"}
-]
-```
 
 ## 🔍 故障排除
 
@@ -272,9 +249,9 @@ DAILY_NEWS_HISTORY_APIS=[
 
 2. **定时任务不生效**
    - 检查机器人是否一直在线
-   - 使用 `定时日报 修复` 命令重新加载定时任务配置
    - 检查定时任务配置是否正确
    - 确认机器人有发送消息的权限
+   - 重启机器人重新加载定时任务配置
 
 3. **图片渲染失败**
    - 确保 nonebot-plugin-htmlrender 插件正确安装并配置
@@ -287,7 +264,8 @@ DAILY_NEWS_HISTORY_APIS=[
 
 5. **缓存问题**
    - 如果获取到过期数据，可以等待缓存自动过期（默认1小时）
-   - 使用 `-a` 参数指定API源可以绕过缓存获取最新数据
+   - 使用 `--force` 参数强制刷新，不使用缓存
+   - 使用 `日报缓存 --reset` 命令重置所有缓存
 
 6. **权限问题**
    - 确认机器人在群聊中有发送消息和图片的权限
@@ -357,13 +335,34 @@ DAILY_NEWS_HISTORY_APIS=[
 ## 🙏 鸣谢
 
 - [NoneBot2](https://github.com/nonebot/nonebot2)：优秀的聊天机器人框架
-- [go-cqhttp](https://github.com/Mrs4s/go-cqhttp)：稳定可靠的 CQHTTP 实现
 - [nonebot-plugin-alconna](https://github.com/nonebot/plugin-alconna)：强大的命令解析插件
 - [nonebot-plugin-htmlrender](https://github.com/nonebot/plugin-htmlrender)：网页渲染插件
 - [nonebot-plugin-apscheduler](https://github.com/nonebot/plugin-apscheduler)：定时任务插件
 - [nonebot-plugin-localstore](https://github.com/nonebot/plugin-localstore)：本地存储插件
 
-## � 更新日志
+## 📝 更新日志
+
+### v0.3.0
+
+#### ✨ 新功能
+
+- **新增摸鱼日历多源支持**：丰富摸鱼日历的API源，提供更稳定的服务
+- **新增微博热搜详情获取**：支持通过WEIBO_COOKIE获取完整微博内容
+- **优化微博热搜网页截图**：提供更精准的截图效果，支持高分辨率截图
+- **新增微博热搜新API解析器**：提高数据获取稳定性
+
+#### ♻️ 重构优化
+
+- **统一新闻源处理器**：集中管理IT之家、知乎、微博等处理器，优化代码结构
+- **重构utils目录结构**：将通用工具函数和存储类迁移至utils/core模块
+- **引入通用文件缓存机制**：为截图和API响应提供更灵活的缓存管理
+- **简化命令参数**：移除冗余的类型和-a参数，简化定时日报和缓存命令
+- **移除修复命令**：简化定时日报管理，移除不必要的修复功能
+
+#### 🔧 配置增强
+
+- **新增WEIBO_COOKIE配置项**：支持微博详情和高级截图功能
+- **优化日报和API源信息显示效果**：提供更好的视觉体验
 
 ### v0.2.6
 
